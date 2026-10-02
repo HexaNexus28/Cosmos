@@ -1,3 +1,7 @@
 .venv/
 calculs/data/
 __pycache__/
+calculs/cobaya_packages/
+calculs/resultats/etape3/chaines/
+calculs/resultats/*.log
+calculs/*.log

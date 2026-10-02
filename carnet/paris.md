@@ -19,6 +19,21 @@ datées, on ne réécrit jamais les anciennes : l'intérêt est de voir comment 
     3,1 et 2,8 σ). Le fond diffus pèse lourd dans le signal ; la littérature 2025-2026 relie une
     partie de cette préférence à la valeur de τ (Q5). Pari inchangé, en attente du test τ.
 
+## P4 — τ et la préférence DESI (prédiction écrite AVANT le calcul, Q5)
+
+- **Prédictions (Claude, 2026-10-02, avant l'étape 3)**
+  - τ libre → τ ≈ 0,055-0,06 (fixé par la polarisation EE aux grandes échelles).
+  - Fond diffus complet (Planck 2018 PR3) + DESI DR2 → préférence w₀wₐ ≈ 2,5-3 σ, un peu sous
+    les 3,1 σ de DESI (qui utilise Planck PR4 + ACT).
+  - τ forcé à 0,09 → préférence ≈ 1,5 σ, mais χ² de la polarisation basse résolution nettement dégradé.
+- **Pari** : ~20 % que τ ≈ 0,09 soit la vraie valeur.
+  - Contre : deux analyses indépendantes de la polarisation (Planck, SRoll2) donnent ~0,055 ; les
+    quasars lointains placent la fin de la réionisation vers z ≈ 5,5-6, ce qui limite τ.
+  - Pour : JWST trouve beaucoup de galaxies brillantes très tôt → plus de photons ionisants possibles.
+- **Ce qui me ferait réviser** : une mesure de τ indépendante de Planck au-dessus de 0,08 (ballons,
+  CLASS au sol, puis LiteBIRD ~2032).
+- **Pari (user)** : _à compléter_
+
 ## P2 — Tension H₀ : erreurs locales et/ou nouvelle physique
 
 - **Pari (Claude, 2026-10-02)** : ~50/50, confiance faible. Si nouvelle physique, plutôt dans
