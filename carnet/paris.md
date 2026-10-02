@@ -15,6 +15,9 @@ datées, on ne réécrit jamais les anciennes : l'intérêt est de voir comment 
   - 2026-10-02 — Calcul maison, sans CMB : BAO seul 1,7 σ, Pantheon+ seul 0,2 σ (w₀ = −0,95,
     wₐ = 0,07, compatible avec Λ), BAO + Pantheon+ 1,7 σ. Le signal n'est pas dans Pantheon+ seul
     et reste modeste sans CMB. Cohérent avec P1, ne le prouve pas. Pari inchangé.
+  - 2026-10-02 — Avec le fond diffus compressé : BAO + CMB 2,4 σ, + Pantheon+ 2,3 σ (DESI publie
+    3,1 et 2,8 σ). Le fond diffus pèse lourd dans le signal ; la littérature 2025-2026 relie une
+    partie de cette préférence à la valeur de τ (Q5). Pari inchangé, en attente du test τ.
 
 ## P2 — Tension H₀ : erreurs locales et/ou nouvelle physique
 

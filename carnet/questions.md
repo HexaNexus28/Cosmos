@@ -23,6 +23,30 @@ La physique quantique prédit une énergie du vide ~10¹²⁰ fois trop grande. 
 prédiction **testable** (et pas seulement une explication après coup) ? Point de départ : l'argument
 anthropique de Weinberg (1987), seule prédiction réussie de la valeur de Λ à ce jour.
 
+## Q5 — τ (profondeur optique de la réionisation) explique-t-il la préférence DESI ? · ouverte
+
+Si τ ≈ 0,09 au lieu de 0,06, la préférence pour une énergie noire qui évolue tomberait de ~3 σ à
+~1,5 σ (PRL 2025, arXiv 2504.16932, arXiv 2606.30903). Test : refaire Q1 avec une vraisemblance CMB
+**complète** (CAMB + Cobaya), en laissant τ libre puis en le fixant à 0,06 et 0,09. Nos priors
+compressés ne contiennent pas τ explicitement : ils ne peuvent pas répondre seuls.
+
+## Q6 — Que nous apprennent les trous noirs sur l'univers ? · ouverte
+
+Pistes : ondes gravitationnelles (GWOSC, données brutes publiques) comme « sirènes standard » pour
+mesurer H₀ sans échelle des distances (lien avec Q2) ; masse de Sgr A* (déjà calculée au chapitre 0) ;
+paradoxe de l'information. Pour l'user : élargir au-delà de l'énergie noire.
+
+## Q7 — Où va-t-on : trajectoire de la Voie lactée et destin de l'univers · ouverte
+
+Collision avec Andromède : plus « certaine » (Sawala et al. 2025 : ~50 % en 10 milliards d'années).
+Destin final : dépend de l'énergie noire (Q1) — si w < −1 durablement, « Big Rip » ; si Λ, mort
+thermique. Données : Gaia DR3 pour les mouvements locaux.
+
+## Q8 — Peut-on obtenir nos propres données ? · ouverte
+
+Voir `lectures/sources-donnees.md`. Piste concrète : mesurer la rotation de la Voie lactée à la raie
+de l'hydrogène 21 cm avec une clé SDR (~30-40 €).
+
 ## Q4 — Q1 et Q2 sont-elles liées ? · ouverte
 
 Une énergie noire qui évolue ou une énergie noire précoce peut-elle réduire **à la fois** la
