@@ -1,5 +1,47 @@
 # Journal
 
+## 2026-10-03 — Q9 : les systématiques de Pantheon+ face à DESI DR2 (10/14, en cours)
+
+**Nouveauté vérifiée avant de lancer** : 2409.18668 traite DESI 2024 avec des systématiques
+simulées, sans σ par systématique. Personne n'a utilisé les 14 matrices officielles contre DR2.
+
+**Ce qu'on a appris sur les données elles-mêmes**
+- Les 14 fichiers `sytematic_groupings` ne se décomposent PAS en stat + systématique : somme des
+  traces 9,2 contre 6,3 au total ; un terme commun (rang ~95, valeur propre −0,094) absent de
+  STATONLY. BS21/C11/G10/SCATTERMOD sont des modèles de dispersion ALTERNATIFS, pas additifs.
+  MASSSTEP, MWCOLORLAW, MWEBV, JLA_SALT2, ZSHIFT ont tous λ₁ = 0,051 vs STATONLY : c'est le terme commun.
+- Méthode retenue (v2, `q9b_systematiques_differentiel.py`) : S_k = fichier_k − fichier_ref
+  (le terme commun s'annule), puis le PIRE décalage à 1 σ qu'autorise S_k (projection du gradient
+  de Δχ² par rapport aux magnitudes). Prédiction au 1er ordre, puis vrai réajustement à ±1, ±2.
+- Test « retrait » abandonné : il exigerait une décomposition additive que les fichiers n'offrent pas.
+
+**Validation**
+- Référence BAO + CMB compressé + Pantheon+ : 2,27 σ (= étape 2). ✓
+- Contrôle positif : SN z < 0,1 décalées de −0,05 / +0,05 mag → 1,14 σ / 5,99 σ. Le code réagit. ✓
+- Direction identique avec les deux références (stabilité 0,99-1,00) pour toutes les systématiques testables.
+
+**Résultats (pire décalage, de −2 à +2 écarts-types de la systématique)**
+
+| Systématique | Ce que c'est | Préférence | Décalage typique | Part à z < 0,1 |
+|---|---|---|---|---|
+| **CALIB** | étalonnage photométrique | **1,70 → 2,84 σ** | 5,6 mmag | 47 % |
+| **JLA_SALT2** | modèle de standardisation SALT2 | **1,90 → 2,66 σ** | 3,2 mmag | 34 % |
+| **MWEBV** | poussière de la Voie lactée | **1,95 → 2,59 σ** | 5,6 mmag | 75 % |
+| HSTCALSPEC | étoiles de référence de Hubble | 2,16 → 2,38 σ | 7,5 mmag | 24 % |
+| MWCOLORLAW | loi de rougissement galactique | 2,16 → 2,38 σ | 2,8 mmag | 69 % |
+| CSP_RECAL | réétalonnage des SN proches CSP | 2,19 → 2,35 σ | 3,8 mmag | 94 % |
+| BS21, C11, G10 | modèles de dispersion | 2,20 → 2,33 σ | 6-28 mmag | 39-47 % |
+| MASSSTEP | correction masse de l'hôte | 2,27 σ (aucun effet) | 3,1 mmag | 40 % |
+
+**Lecture provisoire** : aucune systématique seule, à ±2 écarts-types, ne fabrique le signal
+(max 2,84 σ) ni ne l'efface (min 1,70 σ). Les trois qui comptent sont l'étalonnage, SALT2 et la
+poussière galactique — pas le réétalonnage CSP, pourtant concentré à 94 % sur les SN proches.
+Les modèles de dispersion, les plus gros en amplitude, sont sans effet : ils secouent les SN une à
+une sans tendance avec la distance.
+
+**Interrompu** par manque de mémoire du PC : restent SCATTERMOD, SPECEFF, VPEC, ZSHIFT (le script
+reprend où il s'est arrêté).
+
 ## 2026-10-02 (suite) — Q1 étape 2 : ajout du fond diffus
 
 **Fait**

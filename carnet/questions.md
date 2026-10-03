@@ -47,6 +47,14 @@ thermique. Données : Gaia DR3 pour les mouvements locaux.
 Voir `lectures/sources-donnees.md`. Piste concrète : mesurer la rotation de la Voie lactée à la raie
 de l'hydrogène 21 cm avec une clé SDR (~30-40 €).
 
+## Q9 — Une seule systématique de Pantheon+ peut-elle fabriquer ou effacer le signal DESI DR2 ? · en cours
+
+Première question **nouvelle** du carnet (l'user veut comprendre quelque chose de non établi, pas
+reproduire). Ce qui existe : 2409.18668 (DESI 2024, systématiques simulées par les auteurs, pas de σ
+par systématique) ; 2502.04212 (le signal vient des SN à z < 0,1). Ce qui manque : DR2 + les 14
+matrices officielles de Pantheon+ + l'effet de chacune sur la préférence en σ. Script :
+`calculs/q9_systematiques.py`.
+
 ## Q4 — Q1 et Q2 sont-elles liées ? · ouverte
 
 Une énergie noire qui évolue ou une énergie noire précoce peut-elle réduire **à la fois** la

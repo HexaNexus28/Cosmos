@@ -1,0 +1,286 @@
+{
+  "reference": {
+    "delta_chi2": 7.529632525717261,
+    "sigma": 2.2705890100787127
+  },
+  "systematiques": {
+    "BS21": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.17188397894375854,
+      "effets_par_reference": {
+        "MASSSTEP": 0.17188397894375854,
+        "MWCOLORLAW": 0.16510694058045577
+      },
+      "stabilite_direction_deux_references": 0.9995957927136593,
+      "decalage_typique_mag": 0.006532060697752148,
+      "poids_z_inf_0.1": 0.4676371836437647,
+      "verification": {
+        "-2": {
+          "delta_chi2": 7.190102498093438,
+          "sigma": 2.2049261683696946
+        },
+        "-1": {
+          "delta_chi2": 7.359299770180087,
+          "sigma": 2.2378351495407287
+        },
+        "1": {
+          "delta_chi2": 7.700704103321186,
+          "sigma": 2.3031172644047078
+        },
+        "2": {
+          "delta_chi2": 7.860298617805029,
+          "sigma": 2.3331411221857006
+        }
+      }
+    },
+    "C11": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.04674325583657216,
+      "effets_par_reference": {
+        "MASSSTEP": 0.04674325583657216,
+        "MWCOLORLAW": 0.04441191485085322
+      },
+      "stabilite_direction_deux_references": 0.999995399440132,
+      "decalage_typique_mag": 0.02764882615892673,
+      "poids_z_inf_0.1": 0.3911336965714962,
+      "verification": {
+        "-2": {
+          "delta_chi2": 7.434314138553418,
+          "sigma": 2.252305681730526
+        },
+        "-1": {
+          "delta_chi2": 7.482046084069452,
+          "sigma": 2.261475727001822
+        },
+        "1": {
+          "delta_chi2": 7.575806245311014,
+          "sigma": 2.2794044883222546
+        },
+        "2": {
+          "delta_chi2": 7.619157570691641,
+          "sigma": 2.287656890382387
+        }
+      }
+    },
+    "CALIB": {
+      "effet_1sigma_premier_ordre_delta_chi2": 1.4861081365798807,
+      "effets_par_reference": {
+        "MASSSTEP": 1.4861081365798807,
+        "MWCOLORLAW": 1.458279094764784
+      },
+      "stabilite_direction_deux_references": 0.9965527014765558,
+      "decalage_typique_mag": 0.005557491538946013,
+      "poids_z_inf_0.1": 0.47060717298463167,
+      "verification": {
+        "-2": {
+          "delta_chi2": 4.849683897883551,
+          "sigma": 1.7034060611436164
+        },
+        "-1": {
+          "delta_chi2": 6.118689025660615,
+          "sigma": 1.987035711231176
+        },
+        "1": {
+          "delta_chi2": 9.113898913125922,
+          "sigma": 2.55911100583924
+        },
+        "2": {
+          "delta_chi2": 10.830153682117725,
+          "sigma": 2.8444371693740327
+        }
+      }
+    },
+    "CSP_RECAL": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.20270785962345786,
+      "effets_par_reference": {
+        "MASSSTEP": 0.20270785962345786,
+        "MWCOLORLAW": 0.18093100475455853
+      },
+      "stabilite_direction_deux_references": 0.9983090422426107,
+      "decalage_typique_mag": 0.0037785963873564767,
+      "poids_z_inf_0.1": 0.9404578735068727,
+      "verification": {
+        "-2": {
+          "delta_chi2": 7.134417702792462,
+          "sigma": 2.194011947806671
+        },
+        "-1": {
+          "delta_chi2": 7.3286782734005556,
+          "sigma": 2.2319071878739596
+        },
+        "1": {
+          "delta_chi2": 7.7323810852408315,
+          "sigma": 2.3091009505350457
+        },
+        "2": {
+          "delta_chi2": 7.938089856281522,
+          "sigma": 2.347665720211881
+        }
+      }
+    },
+    "G10": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.0625576384099016,
+      "effets_par_reference": {
+        "MASSSTEP": 0.06193662989403152,
+        "MWCOLORLAW": 0.0625576384099016
+      },
+      "stabilite_direction_deux_references": 0.999993902992124,
+      "decalage_typique_mag": 0.021766145798331617,
+      "poids_z_inf_0.1": 0.42917280685972276,
+      "verification": {
+        "-2": {
+          "delta_chi2": 7.405275709681291,
+          "sigma": 2.246712680333907
+        },
+        "-1": {
+          "delta_chi2": 7.466889147856136,
+          "sigma": 2.258566993259954
+        },
+        "1": {
+          "delta_chi2": 7.589312661483746,
+          "sigma": 2.281978090155057
+        },
+        "2": {
+          "delta_chi2": 7.650662692480637,
+          "sigma": 2.2936396262262804
+        }
+      }
+    },
+    "HSTCALSPEC": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.2972131426843016,
+      "effets_par_reference": {
+        "MASSSTEP": 0.2972131426843016,
+        "MWCOLORLAW": 0.2941822251447992
+      },
+      "stabilite_direction_deux_references": 0.9999672527230341,
+      "decalage_typique_mag": 0.007458888788556029,
+      "poids_z_inf_0.1": 0.2410165171475818,
+      "verification": {
+        "-2": {
+          "delta_chi2": 6.958612281276828,
+          "sigma": 2.159275567642317
+        },
+        "-1": {
+          "delta_chi2": 7.238774125594773,
+          "sigma": 2.2144316800946613
+        },
+        "1": {
+          "delta_chi2": 7.829337263930938,
+          "sigma": 2.3273403577580787
+        },
+        "2": {
+          "delta_chi2": 8.138625813124918,
+          "sigma": 2.384784550473187
+        }
+      }
+    },
+    "JLA_SALT2": {
+      "effet_1sigma_premier_ordre_delta_chi2": 1.0132916470846682,
+      "effets_par_reference": {
+        "MASSSTEP": 1.0132916470846682,
+        "MWCOLORLAW": 0.9797007988000757
+      },
+      "stabilite_direction_deux_references": 0.9901804607025028,
+      "decalage_typique_mag": 0.0031694849983641606,
+      "poids_z_inf_0.1": 0.3392650417779083,
+      "verification": {
+        "-2": {
+          "delta_chi2": 5.734653923678479,
+          "sigma": 1.9044570310742421
+        },
+        "-1": {
+          "delta_chi2": 6.510193819621236,
+          "sigma": 2.0686698109530313
+        },
+        "1": {
+          "delta_chi2": 8.58264225665448,
+          "sigma": 2.465379212533596
+        },
+        "2": {
+          "delta_chi2": 9.688307305061244,
+          "sigma": 2.6574135202229012
+        }
+      }
+    },
+    "MASSSTEP": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.006542559299439787,
+      "effets_par_reference": {
+        "MWCOLORLAW": 0.006542559299439787
+      },
+      "stabilite_direction_deux_references": null,
+      "decalage_typique_mag": 0.003078994963802719,
+      "poids_z_inf_0.1": 0.39995892449960757,
+      "verification": {
+        "-2": {
+          "delta_chi2": 7.517419412432446,
+          "sigma": 2.268252805448491
+        },
+        "-1": {
+          "delta_chi2": 7.524566062428448,
+          "sigma": 2.26962009182863
+        },
+        "1": {
+          "delta_chi2": 7.535253417197509,
+          "sigma": 2.271663579901899
+        },
+        "2": {
+          "delta_chi2": 7.541779541680398,
+          "sigma": 2.272910708530724
+        }
+      }
+    },
+    "MWCOLORLAW": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.2884575116626504,
+      "effets_par_reference": {
+        "MASSSTEP": 0.2884575116626504
+      },
+      "stabilite_direction_deux_references": null,
+      "decalage_typique_mag": 0.002807038792398314,
+      "poids_z_inf_0.1": 0.6893803494598907,
+      "verification": {
+        "-2": {
+          "delta_chi2": 6.960960167092935,
+          "sigma": 2.1597423023664977
+        },
+        "-1": {
+          "delta_chi2": 7.236604494274388,
+          "sigma": 2.214008627074239
+        },
+        "1": {
+          "delta_chi2": 7.8186321989323915,
+          "sigma": 2.3253320562850215
+        },
+        "2": {
+          "delta_chi2": 8.110850884111642,
+          "sigma": 2.379670886481766
+        }
+      }
+    },
+    "MWEBV": {
+      "effet_1sigma_premier_ordre_delta_chi2": 0.8192769135273618,
+      "effets_par_reference": {
+        "MASSSTEP": 0.8192769135273618,
+        "MWCOLORLAW": 0.7667696780874748
+      },
+      "stabilite_direction_deux_references": 0.9918202894147325,
+      "decalage_typique_mag": 0.005608728021397823,
+      "poids_z_inf_0.1": 0.7458598055479269,
+      "verification": {
+        "-2": {
+          "delta_chi2": 5.954318857698581,
+          "sigma": 1.9520074540304004
+        },
+        "-1": {
+          "delta_chi2": 6.7460877103249,
+          "sigma": 2.1167023247994665
+        },
+        "1": {
+          "delta_chi2": 8.359365430079379,
+          "sigma": 2.4251191711463806
+        },
+        "2": {
+          "delta_chi2": 9.27306689194188,
+          "sigma": 2.5866558006621276
+        }
+      }
+    }
+  }
+}

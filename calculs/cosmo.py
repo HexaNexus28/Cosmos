@@ -58,6 +58,20 @@ def charger_desi():
     return z, valeur, type_, np.linalg.inv(cov)
 
 
+def lire_cov_pantheon(chemin):
+    """Format Pantheon+ : premiere ligne N, puis les N x N elements a la suite."""
+    brut = np.loadtxt(chemin)
+    n = int(brut[0])
+    return brut[1:].reshape(n, n)
+
+
+def masque_pantheon():
+    """Supernovas gardees (z > Z_MIN_SN), dans l'ordre du fichier : sert a couper les covariances."""
+    entete = (DATA / "pantheonplus.dat").read_text().splitlines()[0].split()
+    tab = np.genfromtxt(DATA / "pantheonplus.dat", skip_header=1, dtype=None, encoding=None)
+    return np.array([r[entete.index("zHD")] for r in tab], dtype=float) > Z_MIN_SN
+
+
 def charger_pantheon():
     entete = (DATA / "pantheonplus.dat").read_text().splitlines()[0].split()
     col = {nom: i for i, nom in enumerate(entete)}
@@ -65,9 +79,7 @@ def charger_pantheon():
     zhd = np.array([r[col["zHD"]] for r in tab], dtype=float)
     zhel = np.array([r[col["zHEL"]] for r in tab], dtype=float)
     mb = np.array([r[col["m_b_corr"]] for r in tab], dtype=float)
-    brut = np.loadtxt(DATA / "pantheonplus_statsys.cov")
-    n = int(brut[0])
-    cov = brut[1:].reshape(n, n)
+    cov = lire_cov_pantheon(DATA / "pantheonplus_statsys.cov")
     garde = zhd > Z_MIN_SN
     return zhd[garde], zhel[garde], mb[garde], np.linalg.inv(cov[np.ix_(garde, garde)])
 
@@ -103,9 +115,15 @@ def alpha_physique(om, h, ob_h2):
     return C_KMS / (100 * h) / r_d(om, h, ob_h2)
 
 
-def chi2_sn(om, h, w0, wa):
-    """Magnitude absolue et H0 sont degeneres : leur somme est marginalisee analytiquement."""
-    zhd, zhel, mb, icov = SN
+def chi2_sn(om, h, w0, wa, mb=None, icov=None):
+    """Magnitude absolue et H0 sont degeneres : leur somme est marginalisee analytiquement.
+
+    `mb` et `icov` remplacent les magnitudes et l'inverse de covariance publies (tests de
+    systematiques) ; par defaut, les valeurs officielles.
+    """
+    zhd, zhel, mb0, icov0 = SN
+    mb = mb0 if mb is None else mb
+    icov = icov0 if icov is None else icov
     r = mb - 5 * np.log10((1 + zhel) * distance_comobile(zhd, om, h, w0, wa))
     b = icov.sum(axis=0) @ r
     return r @ icov @ r - b * b / icov.sum()
