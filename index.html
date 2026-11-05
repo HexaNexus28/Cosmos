@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cosmos</title>
+<meta name="description" content="Carnet de recherche en cosmologie et simulation Planétaire Kepler.">
+<style>
+:root{color-scheme:dark;--bg:#0a0e18;--panel:#111726;--line:#26304a;--fg:#e7e9ef;--muted:#9099b0;--sun:#f0b64a;--cool:#8db4ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:760px;margin:0 auto;padding:56px 20px}
+h1{font:700 clamp(40px,8vw,64px)/1 Georgia,"Times New Roman",serif;margin:0 0 12px}
+p{color:var(--muted);max-width:60ch}
+.cards{display:grid;gap:14px;margin-top:32px}
+a.card{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit}
+a.card:hover,a.card:focus-visible{border-color:var(--sun);outline:none}
+.k{font:12px ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--sun)}
+h2{margin:4px 0 4px;font-size:20px}
+a.card p{margin:0}
+footer{margin-top:40px;font-size:14px;color:var(--muted)}
+footer a{color:var(--cool)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Cosmos</h1>
+  <p>Refaire les calculs de la cosmologie sur des données publiques, avant de les interpréter.</p>
+  <div class="cards">
+    <a class="card" href="kepler/">
+      <span class="k">Chapitre 0 · simulation</span>
+      <h2>Planétaire Kepler</h2>
+      <p>Des planètes au trou noir central de la galaxie : chaque position est calculée en direct à partir de données publiées.</p>
+    </a>
+    <a class="card" href="https://github.com/HexaNexus28/Cosmos">
+      <span class="k">Carnet de recherche</span>
+      <h2>Le dépôt sur GitHub</h2>
+      <p>Questions ouvertes, paris chiffrés, scripts de calcul et résultats : énergie noire, DESI DR2, supernovas, fond diffus.</p>
+    </a>
+  </div>
+  <footer>Un projet de <a href="https://github.com/HexaNexus28">HexaNexus28</a>.</footer>
+</main>
+</body>
+</html>

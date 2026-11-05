@@ -1,0 +1,982 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Planétaire Kepler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an observatory almanac — a live instrument (canvas + ephemeris panel) above, the worked calculations below. Single dark world by choice. */
+:root{
+  --bg:#0a0e18; --panel:#111726; --panel-2:#161d30; --line:#26304a; --fg:#e7e9ef; --muted:#9099b0; --faint:#5d6781;
+  --sun:#f0b64a; --cool:#8db4ff; --rose:#e98aa0;
+  --c-obs:#bd8119; --c-vis:#3f7fd8; --c-bh:#c0506a;
+  --display:"Bodoni Moda", "Didot", Georgia, serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:15px;line-height:1.55}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:28px 64px}
+@media (max-width:520px){.wrap{padding-inline:16px}}
+a{color:var(--cool)}
+header{display:grid;gap:6px;margin-bottom:18px;max-width:78ch}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--sun);margin:0}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,5.5vw,58px);line-height:1.02;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--display);font-weight:500;font-size:clamp(24px,3.2vw,34px);line-height:1.1;margin:0 0 6px;text-wrap:balance}
+h3{font-size:15px;font-weight:600;margin:0 0 6px;letter-spacing:.01em}
+.lede{color:var(--muted);margin:0;max-width:70ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tabs button{font:500 13.5px var(--body);color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--bg);background:var(--sun);border-color:var(--sun)}
+.tabs button:hover:not([aria-selected="true"]){color:var(--fg);border-color:var(--faint)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+.sim{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+@media (max-width:920px){.sim{grid-template-columns:minmax(0,1fr)}}
+.left{min-width:0;display:grid;gap:10px}
+.stage{position:relative;height:clamp(340px,62vh,690px);border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#070a12}
+#cv{width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#cv:active{cursor:grabbing}
+.hud{position:absolute;left:12px;top:10px;font-family:var(--mono);font-size:12.5px;color:var(--fg);pointer-events:none;text-shadow:0 1px 2px #000}
+.hud .big{font-size:15px;font-weight:500}
+.hud .sub{color:var(--muted)}
+.hint{position:absolute;right:12px;top:10px;font-size:11.5px;color:var(--faint);pointer-events:none;text-align:right;max-width:60%}
+.controls{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px;color:var(--muted)}
+.controls .grp{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.controls label{display:inline-flex;gap:6px;align-items:center;white-space:nowrap}
+.btn{font:500 13px var(--body);color:var(--fg);background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:6px 11px;cursor:pointer}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--sun);color:#1b1304;border-color:var(--sun);min-width:84px}
+select{font:13px var(--body);color:var(--fg);background:var(--panel-2);border:1px solid var(--line);border-radius:7px;padding:5px 8px}
+input[type=range]{accent-color:var(--sun);width:130px}
+input[type=checkbox]{accent-color:var(--sun)}
+.sep{width:1px;height:22px;background:var(--line)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0;font-size:13.5px}
+.panel h3{font-family:var(--display);font-size:22px;font-weight:500;margin:0}
+.panel .kind{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--sun);margin-bottom:2px}
+.panel p{margin:8px 0;color:var(--muted)}
+.panel p strong{color:var(--fg);font-weight:500}
+dl.eph{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;margin:12px 0}
+dl.eph dt{color:var(--muted)}
+dl.eph dd{margin:0;white-space:nowrap;font-family:var(--mono);font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.chip{font:12px var(--body);color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:3px 9px;cursor:pointer}
+.chip[aria-pressed="true"]{color:var(--fg);border-color:var(--sun)}
+.callout{border-left:2px solid var(--sun);padding:6px 10px;margin:10px 0;background:var(--panel-2);border-radius:0 6px 6px 0;color:var(--fg)}
+.note{font-size:12px;color:var(--faint)}
+section.block{margin-top:52px}
+.intro{max-width:74ch;color:var(--muted);margin:0 0 18px}
+.lab{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.lab{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;min-width:0}
+.card.wide{grid-column:1/-1}
+.card p{margin:6px 0;color:var(--muted)}
+.card p b{color:var(--fg);font-weight:500}
+.step{font-family:var(--mono);font-size:11px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase}
+.formula{font-family:var(--mono);font-size:13px;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;padding:8px 10px;margin:8px 0;overflow-x:auto;white-space:nowrap;color:var(--fg)}
+.result{font-family:var(--mono);font-size:13px;color:var(--fg)}
+.result .ok{color:#7fd19b}
+.chart{position:relative;margin-top:10px}
+.chart svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px}
+.sw.dot{width:9px;height:9px;border-radius:50%}
+.tip{position:absolute;pointer-events:none;background:var(--panel-2);border:1px solid var(--faint);border-radius:6px;padding:6px 8px;font:12px var(--mono);color:var(--fg);white-space:nowrap;transform:translate(-50%,-115%)}
+.tablewrap{overflow-x:auto;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:560px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.timeline{display:grid;gap:0;margin-top:8px;border-left:1px solid var(--line);margin-left:6px}
+.tl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;padding:10px 0 10px 18px;position:relative}
+.tl::before{content:"";position:absolute;left:-5px;top:16px;width:9px;height:9px;border-radius:50%;background:var(--sun)}
+.tl.unc::before{background:transparent;border:1.5px solid var(--sun)}
+.tl .when{font-family:var(--mono);font-size:13px;color:var(--sun)}
+.tl .what b{font-weight:600}
+.tl .what p{margin:2px 0 0;color:var(--muted)}
+@media (max-width:560px){.tl{grid-template-columns:minmax(0,1fr);gap:2px}}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:860px){.two{grid-template-columns:minmax(0,1fr)}}
+pre.mermaid{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;margin:0}
+dl.gloss{display:grid;grid-template-columns:minmax(120px,190px) minmax(0,1fr);gap:8px 16px;margin:0}
+dl.gloss dt{font-weight:600}
+dl.gloss dd{margin:0;color:var(--muted)}
+@media (max-width:560px){dl.gloss{grid-template-columns:minmax(0,1fr)} dl.gloss dd{margin-bottom:6px}}
+ol.src{padding-left:20px;color:var(--muted);font-size:13px}
+ol.src li{margin:4px 0}
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Simulation physique · lois de Kepler et de Newton · éphémérides JPL</p>
+    <h1>Planétaire Kepler</h1>
+    <p class="lede">Du Système solaire au trou noir central de la Voie lactée : chaque position est calculée ici en direct à partir de données publiées, et pas animée à la main. Plus bas, le labo refait les calculs qui ont mené à la gravitation, au trou noir, à la matière noire et à la relativité.</p>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Vues de la simulation">
+    <button role="tab" data-tab="galaxy" aria-selected="true">Tour de la galaxie</button>
+    <button role="tab" data-tab="sgra" aria-selected="false">Trou noir Sgr A*</button>
+    <button role="tab" data-tab="helix" aria-selected="false">Hélice dans la galaxie</button>
+    <button role="tab" data-tab="solar" aria-selected="false">Système solaire</button>
+    <button role="tab" data-tab="bary" aria-selected="false">Le Soleil oscille</button>
+    <button role="tab" data-tab="exo" aria-selected="false">Autres systèmes</button>
+  </nav>
+
+  <section class="sim">
+    <div class="left">
+      <div class="stage">
+        <canvas id="cv" aria-label="Simulation orbitale"></canvas>
+        <div class="hud" id="hud"></div>
+        <div class="hint" id="hint"></div>
+      </div>
+      <div class="controls">
+        <div class="grp">
+          <button class="btn primary" id="play" type="button">Pause</button>
+          <label>Vitesse <select id="speed"></select></label>
+          <button class="btn" id="dir" type="button" title="Inverser le sens du temps">Temps : avant</button>
+          <button class="btn" id="today" type="button">Aujourd’hui</button>
+        </div>
+        <span class="sep" aria-hidden="true"></span>
+        <div class="grp" data-for="solar exo sgra helix">
+          <label>Inclinaison de la vue <input type="range" id="tilt" min="0" max="88" step="1"></label>
+        </div>
+        <div class="grp" data-for="solar exo">
+          <label>Distances <select id="scale"><option value="sqrt">compressées (√r)</option><option value="real">réelles</option></select></label>
+        </div>
+        <div class="grp" data-for="solar exo">
+          <label><input type="checkbox" id="areas"> Aires de Kepler</label>
+          <label><input type="checkbox" id="hz"> Zone habitable</label>
+        </div>
+        <div class="grp" data-for="solar">
+          <label><input type="checkbox" id="halley" checked> Comète de Halley</label>
+        </div>
+        <div class="grp" data-for="exo">
+          <label>Système <select id="exoSel">
+            <option value="trappist">TRAPPIST-1 (7 planètes)</option>
+            <option value="kepler90">Kepler-90 (8 planètes)</option>
+            <option value="proxima">Proxima Centauri</option>
+            <option value="cnc55">55 Cancri</option>
+            <option value="alphacen">Alpha Centauri A + B</option>
+          </select></label>
+        </div>
+        <div class="grp" data-for="sgra">
+          <label><input type="checkbox" id="prec"> Précession relativiste (×20)</label>
+          <label><input type="checkbox" id="nep" checked> Orbite de Neptune pour l’échelle</label>
+        </div>
+        <div class="grp" data-for="helix">
+          <label>Corps <select id="hset"><option value="inner">Mercure → Mars</option><option value="outer">Jupiter → Neptune</option></select></label>
+          <label>Traîne <input type="range" id="hwin" min="1" max="200" step="1"> <span id="hwinv" class="note"></span></label>
+          <label>Étirement <input type="range" id="hcomp" min="0" max="100" step="1"> <span id="hcompv" class="note"></span></label>
+        </div>
+        <div class="grp" data-for="bary">
+          <label>Trajectoire affichée ± <input type="range" id="bwin" min="5" max="60" step="1"> <span id="bwinv" class="note"></span></label>
+        </div>
+        <div class="grp" data-for="galaxy">
+          <label>Temps <input type="range" id="gt" min="-4600" max="1000" step="1" style="width:220px"></label>
+        </div>
+      </div>
+    </div>
+    <aside class="panel" id="panel" aria-live="polite"></aside>
+  </section>
+
+  <section class="block" id="lab">
+    <p class="eyebrow">Labo</p>
+    <h2>Retrouver les lois à partir des données</h2>
+    <p class="intro">Tu demandais si on peut repartir des données pour revoir les lois physiques et voir où ça mène. C’est exactement ce qui s’est passé historiquement. Chaque carte part de mesures publiées, applique une seule équation, et compare le résultat à la réalité. Tous les calculs tournent dans cette page.</p>
+    <div class="lab">
+      <div class="card">
+        <span class="step">1 · Kepler (1619)</span>
+        <h3>Les 8 planètes obéissent à P² = a³</h3>
+        <p>On trace la période P (en années) en fonction de la distance moyenne a (en UA) sur des axes logarithmiques. Si la loi est vraie, les points tombent sur une droite de pente 1,5.</p>
+        <div class="chart" id="chKepler"></div>
+        <div class="legend"><span><i class="sw dot" style="background:var(--c-obs)"></i>planètes (données JPL)</span><span><i class="sw" style="background:var(--c-vis)"></i>droite P = a<sup>1,5</sup></span></div>
+        <p class="result" id="kfit"></p>
+      </div>
+      <div class="card">
+        <span class="step">2 · Newton (1687)</span>
+        <h3>Peser le Soleil avec l’orbite de la Terre</h3>
+        <p>Newton montre que la constante de Kepler contient la masse centrale :</p>
+        <div class="formula">G·M = 4π² · a³ / P²</div>
+        <p id="msun"></p>
+        <span class="step" style="display:block;margin-top:14px">3 · Même calcul, 2002–2020</span>
+        <h3>Peser le trou noir avec l’étoile S2</h3>
+        <p>L’étoile S2 tourne autour de Sgr A* en <b>16,05 ans</b>, sur une ellipse de demi-grand axe <b>0,1255″</b> (seconde d’arc). À 8 178 pc de distance, cela fait a = 0,1255 × 8 178 ≈ <b>1 026 UA</b>.</p>
+        <div class="formula">M = a³ / P² = 1026³ / 16,05² (en M☉, UA, années)</div>
+        <p class="result" id="msgra"></p>
+        <p>Aucune étoile n’est visible à cet endroit, donc c’est un objet compact et sombre. C’est l’argument qui a valu le prix Nobel 2020 à Genzel et Ghez.</p>
+      </div>
+      <div class="card wide">
+        <span class="step">4 · Rubin (années 1970) → matière noire</span>
+        <h3>La galaxie tourne trop vite pour sa matière visible</h3>
+        <p>Si toute la masse visible (étoiles + gaz ≈ 6 × 10¹⁰ M☉) était concentrée au centre, la vitesse orbitale devrait baisser en v = √(GM/R) quand on s’éloigne, comme pour les planètes. Or on mesure une vitesse presque constante.</p>
+        <div class="chart" id="chRot"></div>
+        <div class="legend"><span><i class="sw dot" style="background:var(--c-obs)"></i>vitesse mesurée (étoiles, Gaia + APOGEE)</span><span><i class="sw" style="background:var(--c-vis)"></i>prévision : matière visible seule</span><span><i class="sw" style="background:var(--c-bh)"></i>prévision : trou noir seul</span></div>
+        <p id="rotTxt"></p>
+        <div class="tablewrap"><table id="rotTable"></table></div>
+      </div>
+      <div class="card wide">
+        <span class="step">5 · Einstein (1915) → relativité, de Mercure à Mars</span>
+        <h3>Là où Newton ne suffit plus</h3>
+        <p>La relativité générale ajoute deux effets mesurables : les orbites tournent lentement sur elles-mêmes (<b>précession</b>), et les horloges avancent à un rythme qui dépend de la gravité et de la vitesse (<b>dilatation du temps</b>). Voici les valeurs recalculées ici, comparées aux mesures.</p>
+        <div class="tablewrap"><table id="relTable"></table></div>
+        <div class="callout" id="marsTxt"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="future">
+    <p class="eyebrow">Où allons-nous ?</p>
+    <h2>Trajectoire et calendrier</h2>
+    <p class="intro">Il y a quatre mouvements emboîtés. La Terre tourne autour du Soleil, le Soleil fait le tour de la galaxie, la galaxie avance vers Andromède, et le Groupe local dérive vers de grandes concentrations de galaxies. On ne « tombe » pas vers le trou noir : notre vitesse latérale de 229 km/s nous maintient sur une orbite quasi circulaire, comme la Lune autour de la Terre.</p>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <section class="block">
+    <p class="eyebrow">Comment ça tourne</p>
+    <h2>Schémas</h2>
+    <div class="two">
+      <div>
+        <h3>Mouvements emboîtés et vitesses</h3>
+<pre class="mermaid">
+flowchart TD
+  A["Rotation de la Terre<br/>0,47 km/s à l'équateur · 24 h"] --> B["Terre autour du Soleil<br/>29,8 km/s · 1 an"]
+  B --> C["Soleil autour du centre galactique<br/>≈ 229 km/s · ≈ 220 millions d'années"]
+  C --> D["Voie lactée vers Andromède<br/>≈ 110 km/s de rapprochement"]
+  D --> E["Groupe local / fond cosmologique<br/>≈ 620 km/s vers Hydre-Centaure"]
+  C -.gravité dominée par.-> F["Masse totale intérieure ≈ 10¹¹ M☉<br/>dont trou noir 4,2 × 10⁶ M☉ = 0,004 %"]
+</pre>
+      </div>
+      <div>
+        <h3>Ce que calcule la page à chaque image</h3>
+<pre class="mermaid">
+flowchart TD
+  A["Éléments orbitaux publiés<br/>a, e, i, Ω, ϖ, L (JPL / GRAVITY)"] --> B["Anomalie moyenne M(t)<br/>angle qui avance à vitesse constante"]
+  B --> C["Équation de Kepler<br/>E − e·sin E = M<br/>résolue par la méthode de Newton"]
+  C --> D["Position dans le plan de l'orbite<br/>x = a(cos E − e), y = b·sin E"]
+  D --> E["3 rotations ω, i, Ω<br/>→ repère de l'écliptique"]
+  E --> F{"Vue"}
+  F -->|Système| G["Projection 3D → écran"]
+  F -->|Barycentre| H["Σ m·r / Σ m → centre de masse"]
+  F -->|Hélice| I["Écliptique → repère galactique<br/>+ vitesse du Soleil × temps"]
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <p class="eyebrow">Référence</p>
+    <h2>Glossaire, limites et sources</h2>
+    <div class="two">
+      <dl class="gloss">
+        <dt>UA</dt><dd>Unité astronomique : distance Terre–Soleil, 149,6 millions de km.</dd>
+        <dt>al, pc, kpc</dt><dd>Année-lumière (9 461 milliards de km). Parsec = 3,26 al. Kiloparsec (kpc) = 1 000 pc = 3 262 al.</dd>
+        <dt>Ma, Ga</dt><dd>Million d’années, milliard d’années.</dd>
+        <dt>M☉</dt><dd>Masse solaire : 1,989 × 10³⁰ kg.</dd>
+        <dt>Excentricité e</dt><dd>Aplatissement de l’ellipse : 0 = cercle, proche de 1 = très allongée (Halley : 0,967).</dd>
+        <dt>Péri- / apocentre</dt><dd>Point le plus proche / le plus lointain de l’orbite (périhélie/aphélie autour du Soleil).</dd>
+        <dt>Anomalie moyenne</dt><dd>Angle fictif qui avance régulièrement avec le temps. L’équation de Kepler le convertit en position réelle.</dd>
+        <dt>Barycentre</dt><dd>Centre de masse commun autour duquel tournent réellement tous les corps d’un système.</dd>
+        <dt>Vis-viva</dt><dd>Formule v² = GM(2/r − 1/a) qui donne la vitesse sur l’orbite à la distance r.</dd>
+        <dt>Précession</dt><dd>Rotation lente de l’ellipse elle-même, orbite après orbite.</dd>
+        <dt>Rayon de Schwarzschild</dt><dd>Taille de l’horizon d’un trou noir, 2GM/c². Pour Sgr A* : 0,083 UA.</dd>
+        <dt>Zone habitable</dt><dd>Bande de distances où l’eau pourrait rester liquide en surface (approximation ici).</dd>
+        <dt>Résonance</dt><dd>Périodes dans un rapport de petits entiers (3:2, 5:3…), ce qui synchronise les attractions mutuelles.</dd>
+        <dt>CMB</dt><dd>Fond diffus cosmologique : lumière émise 380 000 ans après le Big Bang, qui sert de référentiel « au repos ».</dd>
+      </dl>
+      <div>
+        <h3>Limites du modèle</h3>
+        <ul class="note" style="font-size:13px;color:var(--muted);padding-left:18px;margin-top:0">
+          <li>Modèle à deux corps : les planètes ne se perturbent pas entre elles. Les positions JPL sont précises à quelques minutes d’arc entre 1800 et 2050, et le deviennent moins en dehors.</li>
+          <li>Les tailles des planètes et des étoiles ne sont pas à l’échelle (elles seraient invisibles).</li>
+          <li>Exoplanètes : les périodes sont mesurées, mais les positions de départ sur l’orbite sont illustratives. Alpha Centauri A–B et S2 sont en phase réelle.</li>
+          <li>Galaxie : les bras spiraux sont schématiques, l’orbite du Soleil est traitée comme un cercle, et l’oscillation verticale suit un modèle simple (amplitude ≈ 85 pc, période ≈ 70 Ma ; les estimations publiées vont de 60 à 90 Ma).</li>
+        </ul>
+        <h3 style="margin-top:14px">Sources</h3>
+        <ol class="src">
+          <li><a href="https://ssd.jpl.nasa.gov/planets/approx_pos.html" target="_blank" rel="noopener">JPL — Approximate Positions of the Planets</a> (éléments orbitaux)</li>
+          <li><a href="https://www.aanda.org/articles/aa/full_html/2020/04/aa37813-20/aa37813-20.html" target="_blank" rel="noopener">GRAVITY Collaboration 2020 — précession de Schwarzschild de S2</a></li>
+          <li><a href="https://www.aanda.org/articles/aa/full_html/2019/05/aa35656-19/aa35656-19.html" target="_blank" rel="noopener">GRAVITY Collaboration 2019 — distance du centre galactique (8,178 kpc)</a></li>
+          <li><a href="https://iopscience.iop.org/article/10.3847/1538-4357/aaf648" target="_blank" rel="noopener">Eilers et al. 2019 — courbe de rotation de la Voie lactée</a></li>
+          <li><a href="https://www.nature.com/articles/s41550-025-02563-1" target="_blank" rel="noopener">Sawala et al. 2025 — No certainty of a Milky Way–Andromeda collision</a></li>
+          <li><a href="https://esahubble.org/news/heic2508/" target="_blank" rel="noopener">ESA/Hubble 2025 — Hubble casts doubt on certainty of galactic collision</a></li>
+          <li><a href="https://iopscience.iop.org/article/10.3847/1538-3881/ad7e1d" target="_blank" rel="noopener">Ashby &amp; Patla 2024 (NIST) — horloges sur Mars</a></li>
+          <li><a href="https://exoplanetarchive.ipac.caltech.edu/" target="_blank" rel="noopener">NASA Exoplanet Archive</a> · Agol et al. 2021 (TRAPPIST-1) · Pourbaix &amp; Boffin 2016 (Alpha Cen)</li>
+          <li><a href="https://www.nobelprize.org/prizes/physics/2020/summary/" target="_blank" rel="noopener">Prix Nobel de physique 2020</a></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ---------- constants ---------- */
+const DEG = Math.PI/180, TAU = Math.PI*2, J2000 = 2451545.0;
+const AU_KM = 149597870.7, KMS = 4.740470;             // 1 AU/yr in km/s
+const C_KMS = 299792.458, RSUN_AU = 695700/AU_KM;
+const LIGHT_S_PER_AU = AU_KM/C_KMS;                     // ≈ 499 s
+const G_PC = 4.30091e-3;                                // pc (km/s)^2 / Msun
+const PC_KM = 3.0857e13, MA_S = 3.15576e13;
+const R0 = 8.178, VCIRC = 229;                          // kpc, km/s
+const PGAL = TAU*R0*1000*PC_KM/VCIRC/MA_S;              // Ma
+const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COL = {fg:css('--fg'),muted:css('--muted'),faint:css('--faint'),line:css('--line'),sun:css('--sun'),cool:css('--cool'),rose:css('--rose')};
+const F_MONO = "11px 'IBM Plex Mono', ui-monospace, monospace";
+const F_SANS = "12px 'IBM Plex Sans', system-ui, sans-serif";
+const F_SANS_B = "600 12.5px 'IBM Plex Sans', system-ui, sans-serif";
+const nf = (x,d=2) => Number(x).toLocaleString('fr-FR',{maximumFractionDigits:d});
+const nf0 = x => Math.round(x).toLocaleString('fr-FR');
+const sci = (x,d=2) => { let e=Math.floor(Math.log10(Math.abs(x))); let m=x/10**e; if(Math.round(m*10**d)/10**d>=10){m/=10;e++;} const sup={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'}; return nf(m,d)+' × 10'+String(e).split('').map(ch=>sup[ch]).join(''); };
+const nowJD = () => Date.now()/86400000 + 2440587.5;
+const jdDate = jd => new Date((jd-2440587.5)*86400000);
+const fmtDate = jd => { const d=jdDate(jd); return isNaN(d)?'—':d.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}); };
+const fmtP = d => d<2 ? nf(d*24,1)+' h' : d<730 ? nf(d,d<20?2:0)+' j' : nf(d/365.25,d/365.25<20?2:1)+' ans';
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+
+/* ---------- Kepler machinery ---------- */
+function kepler(M,e){
+  M = ((M+Math.PI)%TAU+TAU)%TAU - Math.PI;
+  let E = e<0.8 ? M : (M>=0?Math.PI:-Math.PI);
+  for(let k=0;k<60;k++){ const d=(E-e*Math.sin(E)-M)/(1-e*Math.cos(E)); E-=d; if(Math.abs(d)<1e-12) break; }
+  return E;
+}
+function mkBody(o){
+  const i=(o.i||0)*DEG, O=(o.O||0)*DEG, w=(o.w||0)*DEG;
+  const cO=Math.cos(O),sO=Math.sin(O),cw=Math.cos(w),sw=Math.sin(w),ci=Math.cos(i),si=Math.sin(i);
+  o.R=[cO*cw-sO*sw*ci, -cO*sw-sO*cw*ci, sO*cw+cO*sw*ci, -sO*sw+cO*cw*ci, sw*si, cw*si];
+  o.bAx=o.a*Math.sqrt(1-o.e*o.e);
+  o.path=[]; for(let k=0;k<=260;k++) o.path.push(posE(o,k/260*TAU));
+  return o;
+}
+function posE(o,E){ const xp=o.a*(Math.cos(E)-o.e), yp=o.bAx*Math.sin(E), R=o.R; return [R[0]*xp+R[1]*yp, R[2]*xp+R[3]*yp, R[4]*xp+R[5]*yp]; }
+const posM = (o,M) => posE(o,kepler(M,o.e));
+const posAt = (o,jd) => posM(o,o.M(jd));
+const vKms = (o,r) => Math.sqrt(Math.max(0,o.mu*(2/r-1/o.a)))*KMS;
+const len = p => Math.hypot(p[0],p[1],p[2]);
+function nextPeri(o,jd){ let M=o.M(jd)%TAU; if(M<0) M+=TAU; return jd + (TAU-M)/TAU*o.P; }
+
+/* ---------- Solar System (JPL approximate elements, J2000) ---------- */
+const PL = [
+ ['Mercure','planète tellurique',0.38709927,0.20563593,7.00497902,252.25032350,149472.67411175,77.45779628,48.33076593,0.383,'#b9b2a7',1.6601e-7],
+ ['Vénus','planète tellurique',0.72333566,0.00677672,3.39467605,181.97909950,58517.81538729,131.60246718,76.67984255,0.949,'#e9d3a0',2.4478e-6],
+ ['Terre','planète tellurique',1.00000261,0.01671123,-0.00001531,100.46457166,35999.37244981,102.93768193,0,1,'#5f9fe0',3.0404e-6],
+ ['Mars','planète tellurique',1.52371034,0.09339410,1.84969142,-4.55343205,19140.30268499,-23.94362959,49.55953891,0.532,'#d7673f',3.2272e-7],
+ ['Jupiter','géante gazeuse',5.20288700,0.04838624,1.30439695,34.39644051,3034.74612775,14.72847983,100.47390909,11.21,'#d8b48e',9.5479e-4],
+ ['Saturne','géante gazeuse',9.53667594,0.05386179,2.48599187,49.95424423,1222.49362201,92.59887831,113.66242448,9.45,'#e6d096',2.8589e-4],
+ ['Uranus','géante de glaces',19.18916464,0.04725744,0.77263783,313.23810451,428.48202785,170.95427630,74.01692503,4.01,'#a3dbe3',4.3662e-5],
+ ['Neptune','géante de glaces',30.06992276,0.00859048,1.77004347,-55.12002969,218.45945325,44.96476227,131.78422574,3.88,'#6283e6',5.1514e-5],
+ ['Pluton','planète naine',39.48211675,0.24882730,17.14001206,238.92903833,145.20780515,224.06891629,110.30393684,0.186,'#cdbba8',6.6e-9],
+];
+const SOLAR = PL.map(([n,kind,a,e,i,L,Ld,vp,O,rE,col,m]) => mkBody({n,kind,a,e,i,O,w:vp-O,rE,col,m,mu:TAU*TAU,P:36525*360/Ld,M:jd=>(L+Ld*(jd-J2000)/36525-vp)*DEG}));
+const HALLEY = mkBody({n:'Halley',kind:'comète',a:17.834,e:0.96714,i:162.26,O:58.42,w:111.33,rE:0.05,col:'#cfe6ff',mu:TAU*TAU,P:27510,M:jd=>TAU*(jd-2446470.5)/27510});
+const byName = n => SOLAR.find(b=>b.n===n);
+
+/* ---------- Other systems ---------- */
+const EXO_DEF = {
+ trappist:{name:'TRAPPIST-1',star:'naine rouge ultra-froide (M8V)',M:0.0898,L:0.000553,col:'#ff8a5c',dist:'40,7 al',sr:6,
+  pl:[['b',1.510826,0,1.116,'rayon 1,12 R⊕'],['c',2.421937,0,1.097,'rayon 1,10 R⊕'],['d',4.049219,0,0.788,'rayon 0,79 R⊕'],['e',6.101013,0,0.920,'rayon 0,92 R⊕'],['f',9.207540,0,1.045,'rayon 1,05 R⊕'],['g',12.352446,0,1.129,'rayon 1,13 R⊕'],['h',18.772866,0,0.755,'rayon 0,76 R⊕']],
+  note:'Sept planètes de taille terrestre, toutes bien plus proches de leur étoile que Mercure ne l’est du Soleil. Leurs périodes forment une chaîne de résonances, ce qui stabilise le système.'},
+ kepler90:{name:'Kepler-90',star:'étoile de type solaire (G0V)',M:1.2,L:1.8,col:'#fff1c9',dist:'≈ 2 800 al',sr:9,
+  pl:[['b',7.00815,0,1.31,'rayon 1,31 R⊕'],['c',8.71937,0,1.19,'rayon 1,19 R⊕'],['i',14.44912,0,1.32,'rayon 1,32 R⊕ · trouvée en 2017 par un réseau de neurones'],['d',59.73667,0,2.88,'rayon 2,88 R⊕'],['e',91.93913,0,2.67,'rayon 2,67 R⊕'],['f',124.9144,0,2.89,'rayon 2,89 R⊕'],['g',210.60697,0,8.13,'rayon 8,13 R⊕'],['h',331.60059,0,11.32,'rayon 11,3 R⊕ (≈ Jupiter)']],
+  note:'Le seul autre système connu à 8 planètes, comme le nôtre. Mais tout tient à l’intérieur de l’orbite terrestre : la planète la plus lointaine (h) est à ≈ 1 UA.'},
+ proxima:{name:'Proxima Centauri',star:'naine rouge (M5.5V)',M:0.1221,L:0.00155,col:'#ff7d52',dist:'4,24 al (étoile la plus proche)',sr:6,
+  pl:[['d',5.122,0,0.64,'masse min. 0,26 M⊕'],['b',11.186,0,1.05,'masse min. 1,07 M⊕']],
+  note:'L’étoile la plus proche du Soleil. Proxima b est dans la zone habitable, mais l’étoile produit des éruptions violentes. « Masse min. » : la méthode des vitesses radiales ne mesure que m·sin i, car l’inclinaison i de l’orbite est inconnue.'},
+ cnc55:{name:'55 Cancri A',star:'étoile orange (G8V)',M:0.905,L:0.582,col:'#ffd9a0',dist:'41 al',sr:8,
+  pl:[['e',0.7365,0.05,1.88,'rayon 1,88 R⊕ · son année dure 17,7 h'],['b',14.6516,0,9,'masse min. 0,83 M♃'],['c',44.39,0.03,6,'masse min. 0,17 M♃'],['f',260.7,0.08,6,'masse min. 0,15 M♃'],['d',5574,0.13,11,'masse min. 3,8 M♃ (analogue de Jupiter)']],
+  note:'Cinq planètes, de 55 Cancri e, une super-Terre qui boucle son orbite en 17,7 heures, à 55 Cancri d, une géante à ≈ 6 UA.'},
+ alphacen:{name:'Alpha Centauri A et B',binary:true,mA:1.0788,mB:0.9092,dist:'4,37 al',
+  note:'Deux étoiles qui tournent autour de leur barycentre en 79,9 ans. Leur distance varie de 11,2 UA (≈ Saturne) à 35,6 UA (≈ Pluton). Proxima Centauri tourne autour du couple à ≈ 13 000 UA.'}
+};
+const EXO = {};
+for(const [k,d] of Object.entries(EXO_DEF)){
+  if(d.binary){
+    const Mt=d.mA+d.mB, P=79.91*365.25, tp=J2000+(2035.48-2000)*365.25;
+    d.rel = mkBody({n:'A–B',a:Math.cbrt(Mt*79.91*79.91),e:0.5208,w:0,mu:TAU*TAU*Mt,P,M:jd=>TAU*(jd-tp)/P});
+    d.maxR = d.rel.a*(1+d.rel.e)*Math.max(d.mA,d.mB)/Mt; d.grid=[5,10,20];
+    EXO[k]=d; continue;
+  }
+  const rng=mulberry(k.length*7919+d.pl.length*104729);
+  d.bodies = d.pl.map(([s,P,e,rE,info])=>{
+    const a=Math.cbrt(d.M*(P/365.25)**2), M0=rng()*TAU, w=rng()*360;
+    const col = rE<1.6?'#c9a58a':rE<4?'#7fc7c0':'#d8b48e';
+    return mkBody({n:d.name.replace(' A','')+' '+s,short:s,a,e,w,rE,col,info,mu:TAU*TAU*d.M,P,M:jd=>M0+TAU*(jd-J2000)/P,kind:rE<1.6?'planète rocheuse':rE<4?'mini-Neptune':'planète géante'});
+  });
+  d.maxR = Math.max(...d.bodies.map(b=>b.a*(1+b.e)));
+  d.hz=[Math.sqrt(d.L/1.1),Math.sqrt(d.L/0.356)];
+  d.grid=[0.01,0.02,0.05,0.1,0.2,0.5,1,2,5].filter(g=>g<d.maxR*1.05);
+  EXO[k]=d;
+}
+
+/* ---------- Sgr A* and S2 (GRAVITY 2020) ---------- */
+const MBH = (0.1255*R0*1000)**3/16.046**2;               // from Kepler III
+const S2DEF = {n:'S2',kind:'étoile (type B, ≈ 14 M☉)',a:0.1255*R0*1000,e:0.8847,w:66.13,col:'#cfe0ff',rE:4,mu:TAU*TAU*MBH,P:16.046*365.25};
+const S2_TP = J2000+(2018.379-2000)*365.25;
+S2DEF.M = jd=>TAU*(jd-S2_TP)/S2DEF.P;
+const S2 = mkBody({...S2DEF});
+const GM_SI = MBH*1.32712440018e20, C_SI=299792458;
+const S2_PREC = 6*Math.PI*GM_SI/(C_SI**2*S2.a*AU_KM*1000*(1-S2.e**2)); // rad per orbit
+const S2_ROSETTE = Array.from({length:8},(_,k)=>mkBody({...S2DEF,w:S2DEF.w-(7-k)*S2_PREC/DEG*20}));
+const SGRA = {name:'Sgr A*',bh:true,bodies:[S2],maxR:S2.a*(1+S2.e),grid:[500,1000,2000]};
+
+/* ---------- galactic frame ---------- */
+const EPS = 23.4392911*DEG;
+const AG = [[-0.0548755604,-0.8734370902,-0.4838350155],[0.4941094279,-0.4448296300,0.7469822445],[-0.8676661490,-0.1980763734,0.4559837762]];
+function eclToGal(p){ const q=[p[0], p[1]*Math.cos(EPS)-p[2]*Math.sin(EPS), p[1]*Math.sin(EPS)+p[2]*Math.cos(EPS)]; return AG.map(r=>r[0]*q[0]+r[1]*q[1]+r[2]*q[2]); }
+const VSUN_KMS = [11.1, VCIRC+12.24, 7.25];               // U,V,W (Schönrich 2010) + circular speed
+const VSUN = VSUN_KMS.map(v=>v*86400/AU_KM);              // AU per day
+const VSUN_NORM = Math.hypot(...VSUN_KMS);
+const ECL_N_GAL = eclToGal([0,0,1]);
+const ECL_TILT = 90 - Math.acos((ECL_N_GAL[0]*VSUN_KMS[0]+ECL_N_GAL[1]*VSUN_KMS[1]+ECL_N_GAL[2]*VSUN_KMS[2])/VSUN_NORM)/DEG;
+
+/* ---------- state ---------- */
+const SPEEDS_DAY = [[1/24,'1 heure / s'],[1,'1 jour / s'],[7,'1 semaine / s'],[30.44,'1 mois / s'],[365.25,'1 an / s'],[3652.5,'10 ans / s'],[36525,'100 ans / s']];
+const SPEEDS_GAL = [[1,'1 Ma / s'],[5,'5 Ma / s'],[20,'20 Ma / s'],[100,'100 Ma / s']];
+const S = {
+  tab:'galaxy', jd:nowJD(), dir:1, playing:!reduced, tG:0,
+  speed:{galaxy:2,sgra:4,helix:3,solar:3,bary:4,exo:1},
+  sel:{solar:'Terre',exo:null,sgra:'S2'},
+  exo:'trappist', real:false, areas:false, hz:false, halley:true, prec:false, nep:true,
+  hset:'inner', hwin:{inner:3,outer:170}, hcomp:70, bwin:30,
+  cams:{solar:{az:-0.5,tilt:0.8,zoom:1},exo:{az:0,tilt:0.55,zoom:1},sgra:{az:0.3,tilt:0.35,zoom:1},helix:{az:-1.35,tilt:1.05,zoom:1},bary:{az:0,tilt:0,zoom:1},galaxy:{az:0,tilt:0,zoom:1}},
+};
+const JD_MIN = J2000-3652500, JD_MAX = J2000+3652500;
+
+/* ---------- canvas ---------- */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1,galImg=null;
+function resize(){ const r=cv.getBoundingClientRect(); DPR=Math.min(2,window.devicePixelRatio||1); W=r.width; H=r.height; cv.width=Math.max(1,Math.round(W*DPR)); cv.height=Math.max(1,Math.round(H*DPR)); galImg=null; }
+new ResizeObserver(resize).observe(cv); resize();
+const STARS = (()=>{const r=mulberry(42);return Array.from({length:420},()=>({x:r(),y:r(),a:0.15+r()*0.55,s:r()<0.08?1.6:1}));})();
+function background(){
+  ctx.fillStyle='#070a12'; ctx.fillRect(0,0,W,H);
+  for(const s of STARS){ ctx.fillStyle=`rgba(220,228,255,${s.a*0.6})`; ctx.fillRect(s.x*W,s.y*H,s.s,s.s); }
+}
+function project(p,cam,cx,cy,s){
+  const ca=Math.cos(cam.az),sa=Math.sin(cam.az),ct=Math.cos(cam.tilt),st=Math.sin(cam.tilt);
+  const x1=p[0]*ca-p[1]*sa, y1=p[0]*sa+p[1]*ca;
+  return [cx+x1*s, cy-(y1*ct+p[2]*st)*s, y1*st-p[2]*ct];
+}
+function polyline(pts,close){ ctx.beginPath(); pts.forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); if(close) ctx.closePath(); }
+function glowStar(x,y,r,col){
+  const g=ctx.createRadialGradient(x,y,0,x,y,r*4); g.addColorStop(0,col); g.addColorStop(0.25,col+'aa'); g.addColorStop(1,col+'00');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*4,0,TAU); ctx.fill();
+  ctx.fillStyle='#fffaf0'; ctx.beginPath(); ctx.arc(x,y,r*0.7,0,TAU); ctx.fill();
+}
+function blackHole(x,y,r){
+  const g=ctx.createRadialGradient(x,y,r*0.9,x,y,r*3.2); g.addColorStop(0,'rgba(255,170,90,0.85)'); g.addColorStop(0.35,'rgba(255,120,60,0.25)'); g.addColorStop(1,'rgba(255,120,60,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*3.2,0,TAU); ctx.fill();
+  ctx.fillStyle='#000'; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+}
+function planetGlyph(x,y,rE,col,ring){
+  const r=Math.max(2.6,Math.min(11,2.2+Math.sqrt(rE)*2.3));
+  const g=ctx.createRadialGradient(x-r*0.35,y-r*0.35,r*0.1,x,y,r); g.addColorStop(0,'#ffffff'); g.addColorStop(0.25,col); g.addColorStop(1,col);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+  if(ring){ ctx.strokeStyle='rgba(230,210,150,0.8)'; ctx.lineWidth=1.3; ctx.beginPath(); ctx.ellipse(x,y,r*2.1,r*0.75,-0.35,0,TAU); ctx.stroke(); }
+  return r;
+}
+let HITS=[];
+
+/* ---------- generic orbital system view ---------- */
+function drawSystem(sys,cam,opt){
+  const real = opt.real;
+  const g = r => real ? r : Math.sqrt(r);
+  const s = Math.min(W,H)*0.44/g(sys.maxR)*cam.zoom, cx=W/2, cy=H/2+10;
+  const tf = p => { if(real) return p; const r=len(p); if(!r) return p; const f=g(r)/r; return [p[0]*f,p[1]*f,p[2]*f]; };
+  const P = p => project(tf(p),cam,cx,cy,s);
+  const circle = R => { const a=[]; for(let k=0;k<=120;k++){const t=k/120*TAU; a.push(P([R*Math.cos(t),R*Math.sin(t),0]));} return a; };
+  // reference rings
+  ctx.lineWidth=1; ctx.setLineDash([2,5]); ctx.strokeStyle='rgba(140,155,190,0.22)';
+  ctx.font=F_MONO; ctx.fillStyle=COL.faint;
+  for(const R of sys.grid||[]){ polyline(circle(R),true); ctx.stroke(); const q=P([R*Math.cos(-cam.az),R*Math.sin(-cam.az),0]); ctx.fillText(nf(R,2)+' UA',q[0]+4,q[1]-3); }
+  ctx.setLineDash([]);
+  // habitable zone
+  if(opt.hz && sys.hz){
+    ctx.beginPath(); circle(sys.hz[1]).forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
+    const inner=circle(sys.hz[0]).reverse(); inner.forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
+    ctx.fillStyle='rgba(110,200,140,0.13)'; ctx.fill('evenodd');
+  }
+  // extra rings (Neptune scale reference)
+  if(opt.refRing){ ctx.strokeStyle='rgba(98,131,230,0.7)'; ctx.setLineDash([5,4]); polyline(circle(opt.refRing.r),true); ctx.stroke(); ctx.setLineDash([]); const q=P([0,-opt.refRing.r,0]); ctx.fillStyle=COL.cool; ctx.font=F_SANS; ctx.fillText(opt.refRing.label,q[0]-40,q[1]+34); }
+  // orbits
+  const bodies=sys.bodies;
+  if(opt.rosette){ opt.rosette.forEach((b,k)=>{ ctx.strokeStyle=`rgba(207,224,255,${0.12+0.08*k})`; ctx.lineWidth=1; polyline(b.path.map(P),true); ctx.stroke(); }); }
+  for(const b of bodies){ const sel=opt.sel===b.n; ctx.strokeStyle=sel?b.col:'rgba(160,175,210,0.30)'; ctx.lineWidth=sel?1.6:1; polyline(b.path.map(P),true); ctx.stroke(); }
+  // Kepler areas
+  const selB = bodies.find(b=>b.n===opt.sel);
+  if(opt.areas && selB){
+    const M0=selB.M(S.jd), N=12, o=P([0,0,0]);
+    for(let k=0;k<N;k++){ ctx.beginPath(); ctx.moveTo(o[0],o[1]); for(let j=0;j<=12;j++){ const q=P(posM(selB,M0+(k+j/12)*TAU/N)); ctx.lineTo(q[0],q[1]); } ctx.closePath(); ctx.fillStyle=k%2?'rgba(240,182,74,0.20)':'rgba(141,180,255,0.20)'; ctx.fill(); }
+  }
+  // bodies sorted by depth with the central object
+  const items=bodies.map(b=>{ const w=posAt(b,S.jd); return {b,w,p:P(w)}; });
+  const c0=P([0,0,0]);
+  items.push({center:true,p:c0});
+  items.sort((a,b)=>b.p[2]-a.p[2]);
+  HITS=[];
+  for(const it of items){
+    if(it.center){ if(sys.bh) blackHole(c0[0],c0[1],5); else glowStar(c0[0],c0[1],sys.sr||9,sys.col||'#ffd27a'); continue; }
+    const {b,p}=it, sel=opt.sel===b.n;
+    if(sel){ ctx.strokeStyle='rgba(231,233,239,0.35)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(c0[0],c0[1]); ctx.lineTo(p[0],p[1]); ctx.stroke(); }
+    const r=planetGlyph(p[0],p[1],b.rE,b.col,b.n==='Saturne');
+    if(sel){ ctx.strokeStyle=COL.sun; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(p[0],p[1],r+4,0,TAU); ctx.stroke(); }
+    if(opt.labels!==false){ ctx.font=sel?F_SANS_B:F_SANS; ctx.fillStyle=sel?COL.fg:COL.muted; ctx.fillText(b.short||b.n,p[0]+r+5,p[1]+4); }
+    HITS.push({n:b.n,x:p[0],y:p[1]});
+  }
+  if(sys.bh){ ctx.font=F_SANS; ctx.fillStyle=COL.muted; ctx.fillText('Sgr A* · 4,2 millions de M☉',c0[0]+14,c0[1]-12); }
+  return {P,s};
+}
+
+function drawBinary(d,cam){
+  const Mt=d.mA+d.mB, fa=-d.mB/Mt, fb=d.mA/Mt, rel=d.rel;
+  const s=Math.min(W,H)*0.42/d.maxR*cam.zoom, cx=W/2, cy=H/2+10;
+  const P=p=>project(p,cam,cx,cy,s);
+  ctx.setLineDash([2,5]); ctx.strokeStyle='rgba(140,155,190,0.22)'; ctx.font=F_MONO; ctx.fillStyle=COL.faint;
+  for(const R of d.grid){ const a=[]; for(let k=0;k<=120;k++){const t=k/120*TAU;a.push(P([R*Math.cos(t),R*Math.sin(t),0]));} polyline(a,true); ctx.stroke(); const q=P([R*Math.cos(-cam.az),R*Math.sin(-cam.az),0]); ctx.fillText(R+' UA',q[0]+4,q[1]-3); }
+  ctx.setLineDash([]);
+  ctx.lineWidth=1.2; ctx.strokeStyle='rgba(255,232,176,0.5)'; polyline(rel.path.map(p=>P([p[0]*fa,p[1]*fa,p[2]*fa])),true); ctx.stroke();
+  ctx.strokeStyle='rgba(255,201,138,0.5)'; polyline(rel.path.map(p=>P([p[0]*fb,p[1]*fb,p[2]*fb])),true); ctx.stroke();
+  const r=posAt(rel,S.jd), a=P(r.map(v=>v*fa)), b=P(r.map(v=>v*fb)), o=P([0,0,0]);
+  ctx.strokeStyle='rgba(231,233,239,0.3)'; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke();
+  ctx.strokeStyle=COL.fg; ctx.lineWidth=1.2; ctx.beginPath(); ctx.moveTo(o[0]-5,o[1]); ctx.lineTo(o[0]+5,o[1]); ctx.moveTo(o[0],o[1]-5); ctx.lineTo(o[0],o[1]+5); ctx.stroke();
+  glowStar(a[0],a[1],8,'#ffe8b0'); glowStar(b[0],b[1],6.5,'#ffc98a');
+  ctx.font=F_SANS_B; ctx.fillStyle=COL.fg; ctx.fillText('α Cen A',a[0]+12,a[1]+4); ctx.fillText('α Cen B',b[0]+12,b[1]+4);
+  ctx.font=F_SANS; ctx.fillStyle=COL.muted; ctx.fillText('barycentre',o[0]+8,o[1]-8);
+  HITS=[];
+}
+
+/* ---------- helix view ---------- */
+function drawHelix(){
+  const cam=S.cams.helix, set=S.hset==='inner'?SOLAR.slice(0,4):SOLAR.slice(4,8);
+  const Wd=S.hwin[S.hset]*365.25, c=10**(-S.hcomp/50), N=900;
+  const vd=VSUN.map(v=>v*c);
+  const mid=vd.map(v=>-v*Wd/2);
+  const maxA=Math.max(...set.map(b=>b.a*(1+b.e)));
+  const Rfit=Math.hypot(...vd)*Wd/2+maxA;
+  const s=Math.min(W,H)*0.46/Rfit*cam.zoom;
+  const Pj=p=>project([p[0]-mid[0],p[1]-mid[1],p[2]-mid[2]],cam,W/2,H/2+8,s);
+  // galactic plane patch
+  const ext=Rfit*1.05, wid=Math.max(maxA*1.6,Rfit*0.25);
+  const corners=[[-wid,-ext],[wid,-ext],[wid,ext],[-wid,ext]].map(([x,y])=>Pj([mid[0]+x,mid[1]+y,mid[2]]));
+  polyline(corners,true); ctx.fillStyle='rgba(141,180,255,0.05)'; ctx.fill(); ctx.strokeStyle='rgba(141,180,255,0.18)'; ctx.stroke();
+  ctx.font=F_SANS; ctx.fillStyle=COL.faint; ctx.fillText('plan de la galaxie',corners[0][0]+6,corners[0][1]-6);
+  const trail=(fn,col,w)=>{ const pts=[]; for(let k=0;k<=N;k++){ const t=S.jd-Wd*k/N; pts.push(Pj(fn(t))); }
+    const chunks=12; for(let q=0;q<chunks;q++){ const a=Math.floor(q*N/chunks), b=Math.floor((q+1)*N/chunks); ctx.strokeStyle=col; ctx.globalAlpha=1-q/chunks*0.8; ctx.lineWidth=w; polyline(pts.slice(a,b+1)); ctx.stroke(); } ctx.globalAlpha=1; };
+  trail(t=>vd.map(v=>v*(t-S.jd)),COL.sun,2);
+  HITS=[];
+  for(const b of set){ trail(t=>{const g=eclToGal(posAt(b,t)); return [g[0]+vd[0]*(t-S.jd),g[1]+vd[1]*(t-S.jd),g[2]+vd[2]*(t-S.jd)];},b.col,1.4); }
+  const sp=Pj([0,0,0]);
+  const u=vd.map(v=>v/Math.hypot(...vd)); const tip=Pj(u.map(v=>v*Rfit*0.28));
+  ctx.strokeStyle=COL.sun; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(sp[0],sp[1]); ctx.lineTo(tip[0],tip[1]); ctx.stroke();
+  const ang=Math.atan2(tip[1]-sp[1],tip[0]-sp[0]); ctx.beginPath(); ctx.moveTo(tip[0],tip[1]); ctx.lineTo(tip[0]-9*Math.cos(ang-0.4),tip[1]-9*Math.sin(ang-0.4)); ctx.lineTo(tip[0]-9*Math.cos(ang+0.4),tip[1]-9*Math.sin(ang+0.4)); ctx.closePath(); ctx.fillStyle=COL.sun; ctx.fill();
+  ctx.font=F_SANS; ctx.fillStyle=COL.sun; ctx.fillText('vers le Cygne · '+nf0(VSUN_NORM)+' km/s',tip[0]+8,tip[1]-6);
+  glowStar(sp[0],sp[1],6,'#ffd27a');
+  for(const b of set){ const g=eclToGal(posAt(b,S.jd)); const p=Pj(g); planetGlyph(p[0],p[1],b.rE,b.col,b.n==='Saturne'); ctx.font=F_SANS; ctx.fillStyle=COL.muted; ctx.fillText(b.n,p[0]+9,p[1]+4); }
+}
+
+/* ---------- barycentre view ---------- */
+function sunBary(jd){ let x=0,y=0,z=0,m=1; for(const b of SOLAR){ const p=posAt(b,jd); x+=b.m*p[0]; y+=b.m*p[1]; z+=b.m*p[2]; m+=b.m; } return [-x/m,-y/m,-z/m]; }
+function drawBary(){
+  const cam=S.cams.bary, s=Math.min(W,H)*0.45/(3.1*RSUN_AU)*cam.zoom, cx=W/2, cy=H/2+8;
+  const P=p=>[cx+p[0]*s, cy-p[1]*s];
+  ctx.font=F_MONO;
+  for(const k of [1,2,3]){ ctx.strokeStyle='rgba(140,155,190,0.22)'; ctx.setLineDash([2,5]); ctx.beginPath(); ctx.arc(cx,cy,k*RSUN_AU*s,0,TAU); ctx.stroke(); ctx.fillStyle=COL.faint; ctx.fillText(k+' R☉',cx+k*RSUN_AU*s*0.71+4,cy-k*RSUN_AU*s*0.71-4); }
+  ctx.setLineDash([]);
+  const Y=S.bwin*365.25, N=700, past=[], fut=[];
+  for(let k=0;k<=N;k++){ const t=S.jd-Y+2*Y*k/N; (t<=S.jd?past:fut).push(P(sunBary(t))); }
+  ctx.strokeStyle='rgba(240,182,74,0.45)'; ctx.lineWidth=1.4; polyline(past); ctx.stroke();
+  ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(240,182,74,0.8)'; polyline(fut); ctx.stroke(); ctx.setLineDash([]);
+  const sp=P(sunBary(S.jd)), rpx=RSUN_AU*s;
+  const g=ctx.createRadialGradient(sp[0],sp[1],rpx*0.2,sp[0],sp[1],rpx*1.15); g.addColorStop(0,'rgba(255,236,190,0.55)'); g.addColorStop(0.85,'rgba(240,160,60,0.35)'); g.addColorStop(1,'rgba(240,160,60,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(sp[0],sp[1],rpx*1.15,0,TAU); ctx.fill();
+  ctx.strokeStyle='rgba(255,210,122,0.9)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.arc(sp[0],sp[1],rpx,0,TAU); ctx.stroke();
+  ctx.fillStyle=COL.sun; ctx.beginPath(); ctx.arc(sp[0],sp[1],2.5,0,TAU); ctx.fill();
+  ctx.font=F_SANS_B; ctx.fillStyle=COL.fg; ctx.fillText('Soleil',sp[0]+rpx*0.72,sp[1]-rpx*0.72);
+  ctx.strokeStyle=COL.fg; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(cx-6,cy); ctx.lineTo(cx+6,cy); ctx.moveTo(cx,cy-6); ctx.lineTo(cx,cy+6); ctx.stroke();
+  ctx.font=F_SANS; ctx.fillStyle=COL.fg; ctx.fillText('barycentre',cx+8,cy+16);
+  for(const n of ['Jupiter','Saturne']){ const b=byName(n), p=posAt(b,S.jd), a=Math.atan2(p[1],p[0]), R=Math.min(W,H)*0.47;
+    const x=cx+Math.cos(a)*R, y=cy-Math.sin(a)*R; ctx.strokeStyle=b.col; ctx.globalAlpha=0.6; ctx.setLineDash([3,4]); ctx.beginPath(); ctx.moveTo(cx+Math.cos(a)*R*0.78,cy-Math.sin(a)*R*0.78); ctx.lineTo(x,y); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha=1;
+    planetGlyph(x,y,b.rE,b.col,n==='Saturne'); ctx.fillStyle=COL.muted; ctx.fillText('direction de '+n,x+(Math.cos(a)>0?-120:12),y+(Math.sin(a)>0?20:-14)); }
+  HITS=[];
+}
+
+/* ---------- galaxy view ---------- */
+const zG = t => 85*Math.sin(TAU*t/70 + Math.asin(20/85));
+const EVENTS = [{t:0,l:'Aujourd’hui'},{t:-66,l:'Impact de Chicxulub (fin des dinosaures non aviens)'},{t:-252,l:'Extinction Permien-Trias (la plus grave connue)'},{t:-541,l:'Explosion cambrienne (apparition de la plupart des grands groupes animaux)'},{t:-4567,l:'Formation du Système solaire'},{t:Math.round(PGAL),l:'Prochain tour complet de la galaxie'},{t:1000,l:'Soleil ≈ 10 % plus lumineux : les océans commencent à s’évaporer'}];
+function buildGalaxy(){
+  const off=document.createElement('canvas'); off.width=Math.round(W*DPR); off.height=Math.round(H*DPR);
+  const g=off.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0); g.globalCompositeOperation='lighter';
+  const sc=Math.min(W,H)*0.46/16, cx=W/2, cy=H/2-18, rng=mulberry(7);
+  const gauss=()=>{let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*v);};
+  const dot=(x,y,col,a,sz=1)=>{g.fillStyle=`rgba(${col},${a})`; g.fillRect(cx+x*sc,cy+y*sc,sz,sz);};
+  const n=Math.round(Math.min(1,(W*H)/(900*600))*9000)+3000;
+  for(let k=0;k<n*0.35;k++){ const r=Math.min(16,-3*Math.log(rng())), t=rng()*TAU; dot(r*Math.cos(t),r*Math.sin(t),'180,190,230',0.35); }
+  const pitch=Math.tan(13*DEG);
+  for(let arm=0;arm<4;arm++){ for(let k=0;k<n*0.13;k++){ const r=3+Math.pow(rng(),0.9)*13, th=arm*Math.PI/2 - Math.log(r/3)/pitch + gauss()*0.16; const x=r*Math.cos(th)+gauss()*0.3, y=r*Math.sin(th)+gauss()*0.3; const pink=rng()<0.05; dot(x,y,pink?'255,150,180':'170,195,255',pink?0.8:0.55,pink?1.6:1.2); } }
+  const ba=27*DEG; for(let k=0;k<n*0.18;k++){ const x=gauss()*2.4, y=gauss()*0.8; dot(x*Math.cos(ba)-y*Math.sin(ba),x*Math.sin(ba)+y*Math.cos(ba),'255,215,160',0.5,1.3); }
+  const glow=g.createRadialGradient(cx,cy,0,cx,cy,sc*3.2); glow.addColorStop(0,'rgba(255,220,170,0.55)'); glow.addColorStop(1,'rgba(255,220,170,0)'); g.fillStyle=glow; g.beginPath(); g.arc(cx,cy,sc*3.2,0,TAU); g.fill();
+  galImg={img:off,sc,cx,cy};
+}
+function drawGalaxy(){
+  if(!galImg) buildGalaxy();
+  const {img,sc,cx,cy}=galImg, z=S.cams.galaxy.zoom;
+  ctx.save(); ctx.translate(cx,cy); ctx.scale(z,z); ctx.translate(-cx,-cy);
+  ctx.drawImage(img,0,0,W,H);
+  const Rp=R0*sc, th=t=>Math.PI/2+TAU*t/PGAL;
+  ctx.setLineDash([3,5]); ctx.strokeStyle='rgba(240,182,74,0.35)'; ctx.lineWidth=1/z; ctx.beginPath(); ctx.arc(cx,cy,Rp,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  const t=S.tG;
+  ctx.strokeStyle=COL.sun; ctx.lineWidth=2.2/z; ctx.beginPath(); ctx.arc(cx,cy,Rp,th(t-40),th(t)); ctx.stroke();
+  for(const e of EVENTS){ if(e.t===0||e.t<-700||e.t>700||e.t===t) continue; const a=th(e.t), x=cx+Rp*Math.cos(a), y=cy+Rp*Math.sin(a);
+    ctx.fillStyle='rgba(233,138,160,0.9)'; ctx.beginPath(); ctx.arc(x,y,3/z,0,TAU); ctx.fill(); }
+  const a=th(t), sx=cx+Rp*Math.cos(a), sy=cy+Rp*Math.sin(a);
+  ctx.restore();
+  const X=v=>cx+(v-cx)*z, Yc=v=>cy+(v-cy)*z;
+  blackHole(cx,cy,3.5);
+  ctx.font=F_SANS; ctx.fillStyle=COL.fg; ctx.fillText('Sgr A* (trou noir central)',cx+10,cy-10);
+  for(const e of EVENTS){ if(e.t===0||e.t<-700||e.t>700) continue; const aa=th(e.t); const ex=X(cx+Rp*Math.cos(aa)), ey=Yc(cy+Rp*Math.sin(aa)); ctx.font=F_MONO; ctx.fillStyle=COL.rose; const lbl=e.t<0?'−'+nf0(-e.t)+' Ma':'+'+nf0(e.t)+' Ma'; ctx.fillText(lbl,ex+(Math.cos(aa)>0?6:-6-ctx.measureText(lbl).width),ey+(Math.sin(aa)>0?14:-6)); }
+  glowStar(X(sx),Yc(sy),5,'#ffd27a');
+  ctx.font=F_SANS_B; ctx.fillStyle=COL.fg; ctx.fillText('Soleil',X(sx)+10,Yc(sy)+4);
+  // scale bar
+  const bar=5*sc*z; ctx.strokeStyle=COL.muted; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(16,H-104); ctx.lineTo(16+bar,H-104); ctx.stroke(); ctx.font=F_MONO; ctx.fillStyle=COL.muted; ctx.fillText('5 kpc = 16 300 al',16,H-110);
+  ctx.fillText('rotation : sens horaire vue du pôle nord galactique',16,H-90+0);
+  // vertical oscillation strip
+  const y0=H-70, hh=58, x0=16, ww=W-32;
+  ctx.fillStyle='rgba(10,14,24,0.85)'; ctx.fillRect(x0,y0-4,ww,hh+8); ctx.strokeStyle=COL.line; ctx.strokeRect(x0,y0-4,ww,hh+8);
+  const t0=t-250, t1=t+250, zx=v=>x0+8+(v-t0)/(t1-t0)*(ww-16), zy=v=>y0+hh/2-v/100*(hh/2-6);
+  ctx.strokeStyle='rgba(141,180,255,0.5)'; ctx.beginPath(); ctx.moveTo(x0+8,zy(0)); ctx.lineTo(x0+ww-8,zy(0)); ctx.stroke();
+  ctx.strokeStyle=COL.sun; ctx.lineWidth=1.4; ctx.beginPath(); for(let k=0;k<=240;k++){ const tt=t0+(t1-t0)*k/240; const X_=zx(tt),Y_=zy(zG(tt)); k?ctx.lineTo(X_,Y_):ctx.moveTo(X_,Y_);} ctx.stroke();
+  ctx.fillStyle=COL.sun; ctx.beginPath(); ctx.arc(zx(t),zy(zG(t)),3.5,0,TAU); ctx.fill();
+  ctx.font=F_MONO; ctx.fillStyle=COL.muted; ctx.fillText('hauteur au-dessus du disque (±85 pc) · ±250 Ma autour de t',x0+10,y0+8); ctx.fillStyle=COL.cool; ctx.fillText('plan galactique',x0+ww-112,zy(0)-4);
+  HITS=[];
+}
+
+/* ---------- main render ---------- */
+function render(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  background();
+  const t=S.tab;
+  if(t==='solar'){ const sys={bodies:S.halley?[...SOLAR,HALLEY]:SOLAR,maxR:S.halley?35.2:49.3,grid:[1,5,10,20,30],hz:[0.95,1.68],sr:9,col:'#ffd27a'}; drawSystem(sys,S.cams.solar,{real:S.real,areas:S.areas,hz:S.hz,sel:S.sel.solar}); }
+  else if(t==='exo'){ const d=EXO[S.exo]; if(d.binary) drawBinary(d,S.cams.exo); else drawSystem({...d,sr:d.sr,col:d.col},S.cams.exo,{real:S.real,areas:S.areas,hz:S.hz,sel:S.sel.exo}); }
+  else if(t==='sgra'){ drawSystem(SGRA,S.cams.sgra,{real:true,sel:'S2',rosette:S.prec?S2_ROSETTE:null,refRing:S.nep?{r:30.07,label:'orbite de Neptune (30 UA) à la même échelle'}:null}); }
+  else if(t==='helix') drawHelix();
+  else if(t==='bary') drawBary();
+  else if(t==='galaxy') drawGalaxy();
+  hud();
+}
+function hud(){
+  const h=document.getElementById('hud');
+  const sp = S.tab==='galaxy' ? SPEEDS_GAL[S.speed.galaxy][1] : SPEEDS_DAY[S.speed[S.tab]][1];
+  const state = S.playing ? (S.dir>0?sp:'◀ '+sp) : 'en pause';
+  if(S.tab==='galaxy'){ const t=S.tG; h.innerHTML=`<div class="big">${t===0?'Aujourd’hui':t<0?'il y a '+nf0(-t)+' Ma':'dans '+nf0(t)+' Ma'}</div><div class="sub">${state} · Ma = millions d’années</div>`; }
+  else h.innerHTML=`<div class="big">${fmtDate(S.jd)}</div><div class="sub">${state}</div>`;
+}
+
+/* ---------- panels ---------- */
+const row=(k,v)=>`<dt>${k}</dt><dd>${v}</dd>`;
+function bodyRows(b,centerLabel,lightFrom){
+  const p=posAt(b,S.jd), r=len(p), v=vKms(b,r), q=b.a*(1-b.e), Q=b.a*(1+b.e);
+  let h=row('Distance '+centerLabel, nf(r,3)+' UA')+row('', nf(r*AU_KM/1e6,1)+' millions de km');
+  if(lightFrom) h+=row('Lumière depuis '+lightFrom, r*LIGHT_S_PER_AU<120? nf(r*LIGHT_S_PER_AU,1)+' s' : r*LIGHT_S_PER_AU<7200? nf(r*LIGHT_S_PER_AU/60,1)+' min' : nf(r*LIGHT_S_PER_AU/3600,1)+' h');
+  h+=row('Vitesse orbitale actuelle', nf(v,v<10?2:1)+' km/s')+row('Période', fmtP(b.P))+row('Demi-grand axe a', nf(b.a,b.a<0.1?4:3)+' UA')+row('Excentricité e', nf(b.e,4));
+  if(b.i!==undefined && b.i) h+=row('Inclinaison', nf(b.i,2)+'°');
+  h+=row('Péri- / apocentre', nf(q,q<0.1?4:3)+' / '+nf(Q,Q<0.1?4:3)+' UA')+row('Prochain péricentre', fmtDate(nextPeri(b,S.jd)));
+  const vp=vKms(b,q), va=vKms(b,Q);
+  return {h, ratio:vp/va, vp, va};
+}
+function panelSolar(){
+  const all=S.halley?[...SOLAR,HALLEY]:SOLAR; let b=all.find(x=>x.n===S.sel.solar)||byName('Terre');
+  const {h,ratio,vp,va}=bodyRows(b,'au Soleil','le Soleil');
+  let extra='';
+  if(b.n!=='Terre'){ const d=Math.hypot(...posAt(b,S.jd).map((v,k)=>v-posAt(byName('Terre'),S.jd)[k])); extra=row('Distance à la Terre',nf(d,3)+' UA')+row('Signal radio / image',nf(d*LIGHT_S_PER_AU/60,1)+' min de retard'); }
+  return `<span class="kind">${b.kind}</span><h3>${b.n}</h3><dl class="eph">${h}${extra}</dl>
+  <p><strong>2ᵉ loi de Kepler :</strong> ${b.n} va ${nf(ratio,2)} fois plus vite au péricentre (${nf(vp,1)} km/s) qu’à l’apocentre (${nf(va,1)} km/s). Coche « Aires de Kepler » : chaque secteur est parcouru dans le même temps (1/12 de la période) et a la même aire, en distances réelles.</p>
+  <div class="chips">${all.map(x=>`<button class="chip" data-sel="${x.n}" aria-pressed="${x.n===b.n}">${x.n}</button>`).join('')}</div>
+  <p class="note">Positions du jour issues des éléments JPL. Glisser pour tourner, molette ou pincement pour zoomer.</p>`;
+}
+function panelExo(){
+  const d=EXO[S.exo];
+  if(d.binary){ const r=len(posAt(d.rel,S.jd)), Mt=d.mA+d.mB, v=vKms(d.rel,r);
+    return `<span class="kind">étoile double · ${d.dist}</span><h3>${d.name}</h3><p>${d.note}</p><dl class="eph">${row('Séparation A–B aujourd’hui',nf(r,2)+' UA')+row('Vitesse relative',nf(v,2)+' km/s')+row('dont A autour du barycentre',nf(v*d.mB/Mt,2)+' km/s')+row('dont B autour du barycentre',nf(v*d.mA/Mt,2)+' km/s')+row('Période',nf(79.91,2)+' ans')+row('Masses A / B',nf(d.mA,3)+' / '+nf(d.mB,3)+' M☉')+row('Prochain périastre',fmtDate(nextPeri(d.rel,S.jd)))}</dl>
+    <p class="note">Phase réelle (orbite de Pourbaix &amp; Boffin 2016). L’étoile la plus lourde (A) fait la plus petite ellipse : c’est le même principe que le Soleil autour du barycentre.</p>`; }
+  let b=d.bodies.find(x=>x.n===S.sel.exo); if(!b){ b=d.bodies[Math.min(3,d.bodies.length-1)]; S.sel.exo=b.n; }
+  const {h}=bodyRows(b,'à l’étoile',null);
+  const inHZ = b.a>=d.hz[0] && b.a<=d.hz[1];
+  let res='';
+  if(S.exo==='trappist'){ res='<p><strong>Résonances :</strong> '+d.bodies.slice(1).map((x,k)=>`${x.short}/${d.bodies[k].short} = ${nf(x.P/d.bodies[k].P,3)}`).join(' · ')+' (proches de 8/5, 5/3, 3/2, 3/2, 4/3, 3/2).</p>'; }
+  return `<span class="kind">${d.star} · ${d.dist}</span><h3>${b.n}</h3><p>${d.note}</p><dl class="eph">${h}${row('Taille / masse',b.info)}${row('Zone habitable (approx.)',inHZ?'oui':'non')}</dl>
+  <p class="note">a est calculé ici par la 3ᵉ loi de Kepler, a³ = M★·P², avec M★ = ${nf(d.M,3)} M☉. ${nf(0.387/d.maxR,1)>1?'Tout ce système tiendrait '+nf(0.387/d.maxR,1)+' fois dans l’orbite de Mercure.':''}</p>${res}
+  <div class="chips">${d.bodies.map(x=>`<button class="chip" data-sel="${x.n}" aria-pressed="${x.n===b.n}">${x.short}</button>`).join('')}</div>
+  <p class="note">Positions de départ sur l’orbite illustratives, périodes mesurées.</p>`;
+}
+function panelSgra(){
+  const p=posAt(S2,S.jd), r=len(p), v=vKms(S2,r), q=S2.a*(1-S2.e), vq=vKms(S2,q), rs=2*GM_SI/C_SI**2/1000/AU_KM;
+  return `<span class="kind">centre de la Voie lactée · 26 700 al</span><h3>L’étoile S2 et Sgr A*</h3>
+  <dl class="eph">${row('Distance S2 – trou noir',nf(r,0)+' UA')+row('',nf(r*LIGHT_S_PER_AU/3600,1)+' heures-lumière')+row('Vitesse actuelle',nf0(v)+' km/s')+row('Période',nf(16.046,2)+' ans')+row('Péricentre',nf0(q)+' UA')+row('… en rayons de Schwarzschild',nf0(q/rs))+row('Vitesse au péricentre',nf0(vq)+' km/s ('+nf(vq/C_KMS*100,1)+' % de c)')+row('Dernier péricentre','mai 2018')+row('Prochain péricentre',fmtDate(nextPeri(S2,S.jd)))+row('Masse déduite (Kepler)',sci(MBH,2)+' M☉')+row('Précession relativiste',nf(S2_PREC/DEG*60,1)+' ′ par orbite')}</dl>
+  <div class="callout">Le trou noir pèse 4,2 millions de Soleils, mais il ne représente que 0,004 % de la masse qui retient le Soleil sur son orbite galactique. S’il était seul, le Soleil tournerait à 1,5 km/s au lieu de 229 km/s.</div>
+  <p class="note">Orbite réelle d’après GRAVITY 2020, vue dans son propre plan. L’horizon (0,083 UA) serait invisible à cette échelle. Coche « Précession » : les ellipses successives tournent de 12′ par tour, exagéré ici ×20.</p>`;
+}
+function panelHelix(){
+  const c=10**(-S.hcomp/50), perYr=VSUN_NORM*365.25*86400/AU_KM;
+  return `<span class="kind">repère galactique</span><h3>La vraie forme du mouvement</h3>
+  <p>Dans le repère de la galaxie, le Soleil avance et les planètes décrivent des <strong>hélices</strong> (des ressorts) autour de sa trajectoire.</p>
+  <dl class="eph">${row('Vitesse du Soleil (galaxie)',nf(VSUN_NORM,1)+' km/s')+row('Distance parcourue par an',nf(perYr,1)+' UA')+row('Vitesse de la Terre (Soleil)','29,8 km/s')+row('Angle écliptique / trajectoire',nf(ECL_TILT,1)+'°')+row('Étirement affiché',c>0.99?'échelle réelle':'axe raccourci ×1/'+nf0(1/c))}</dl>
+  <div class="callout">À l’échelle réelle, pendant qu’elle fait un tour (2π UA ≈ 6,3 UA), la Terre avance de ${nf(perYr,0)} UA avec le Soleil. L’hélice est donc 8 fois plus étirée que ce que montrent les vidéos « vortex », et elle est inclinée à ${nf(ECL_TILT,0)}°, pas perpendiculaire. Mets l’étirement à 0 pour voir l’échelle réelle.</div>
+  <p class="note">Positions des planètes : JPL. Vitesse du Soleil : 229 km/s de rotation galactique + mouvement propre (11,1 ; 12,2 ; 7,3 km/s, Schönrich 2010). Conversion écliptique → galactique : matrice IAU J2000.</p>`;
+}
+function panelBary(){
+  const b=sunBary(S.jd), off=len(b), v=len(sunBary(S.jd+0.5).map((x,k)=>x-sunBary(S.jd-0.5)[k]))*AU_KM*1000/86400;
+  const Ms=SOLAR.reduce((a,x)=>a+x.m,0);
+  return `<span class="kind">centre de masse du Système solaire</span><h3>Le Soleil ne reste pas immobile</h3>
+  <dl class="eph">${row('Centre du Soleil ↔ barycentre',nf(off/RSUN_AU,2)+' R☉')+row('',nf0(off*AU_KM)+' km')+row('Barycentre hors du Soleil',off>RSUN_AU?'oui':'non')+row('Vitesse du Soleil autour',nf(v,1)+' m/s')+row('Masse des planètes / Soleil',nf(Ms*100,3)+' %')}</dl>
+  <p>Jupiter a 0,1 % de la masse du Soleil mais se trouve à 5,2 UA. Le barycentre dépend du produit masse × distance, et c’est pour ça qu’il sort souvent du Soleil.</p>
+  <div class="callout">Ce mouvement de ~${nf0(v)} m/s est celui que les astronomes mesurent sur d’autres étoiles (méthode des vitesses radiales). C’est ainsi qu’ont été trouvées Proxima b et les planètes de 55 Cancri.</div>
+  <p class="note">Somme de m·r pour les 8 planètes et Pluton. Trait plein : passé, pointillé : futur.</p>`;
+}
+function panelGalaxy(){
+  const t=S.tG, turns=t/PGAL, near=EVENTS.filter(e=>e.t!==0).map(e=>`<button class="chip" data-jump="${e.t}" aria-pressed="${e.t===t}">${e.t<0?'−'+nf0(-e.t):'+'+nf0(e.t)} Ma</button>`).join('');
+  const Menc=VCIRC**2*R0*1000/G_PC;
+  const ev=EVENTS.slice().sort((a,b)=>Math.abs(a.t-t)-Math.abs(b.t-t))[0];
+  return `<span class="kind">Voie lactée · vue du pôle nord galactique</span><h3>L’année galactique</h3>
+  <dl class="eph">${row('Distance au centre R₀',nf(R0,3)+' kpc')+row('… en années-lumière',nf0(R0*3261.56)+' al')+row('Vitesse orbitale',VCIRC+' km/s')+row('… en km/h',nf0(VCIRC*3600)+' km/h')+row('Période (2πR₀/V)',nf(PGAL,0)+' Ma')+row('Tours depuis aujourd’hui',(turns>=0?'+':'')+nf(turns,2))+row('Tours depuis la naissance du Soleil',nf(4567/PGAL,1))+row('Hauteur z (modèle)',nf(zG(t),0)+' pc')+row('Masse à l’intérieur de l’orbite',sci(Menc,1)+' M☉')+row('Part du trou noir',nf(MBH/Menc*100,4)+' %')}</dl>
+  ${Math.abs(ev.t-t)<8?`<div class="callout">${ev.l}</div>`:''}
+  <div class="chips">${near}</div>
+  <p class="note">Vitesse et distance : GRAVITY 2019, Eilers 2019. Masse intérieure calculée par M = V²R/G. Les bras spiraux tournent moins vite que les étoiles et sont dessinés fixes (schéma).</p>`;
+}
+const PANELS={solar:panelSolar,exo:panelExo,sgra:panelSgra,helix:panelHelix,bary:panelBary,galaxy:panelGalaxy};
+const panelEl=document.getElementById('panel');
+function updatePanel(){ panelEl.innerHTML=PANELS[S.tab](); }
+panelEl.addEventListener('click',e=>{
+  const s=e.target.closest('[data-sel]'); if(s){ if(S.tab==='solar') S.sel.solar=s.dataset.sel; if(S.tab==='exo') S.sel.exo=s.dataset.sel; updatePanel(); render(); return; }
+  const j=e.target.closest('[data-jump]'); if(j){ S.tG=+j.dataset.jump; document.getElementById('gt').value=S.tG; S.playing=false; syncPlay(); updatePanel(); render(); }
+});
+
+/* ---------- controls ---------- */
+const $=id=>document.getElementById(id);
+const HINTS={galaxy:'Molette ou pincement pour zoomer · barre de temps en dessous',sgra:'Glisser pour tourner · molette pour zoomer',helix:'Glisser pour tourner autour des hélices',solar:'Glisser pour tourner · toucher une planète',bary:'Molette pour zoomer',exo:'Glisser pour tourner · toucher une planète'};
+function fillSpeed(){ const list=S.tab==='galaxy'?SPEEDS_GAL:SPEEDS_DAY; $('speed').innerHTML=list.map((s,k)=>`<option value="${k}">${s[1]}</option>`).join(''); $('speed').value=S.speed[S.tab]; }
+function syncPlay(){ $('play').textContent=S.playing?'Pause':'Lecture'; }
+function setTab(t){
+  S.tab=t;
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));
+  document.querySelectorAll('[data-for]').forEach(g=>g.hidden=!g.dataset.for.split(' ').includes(t));
+  $('today').hidden = false;
+  fillSpeed(); $('hint').textContent=HINTS[t];
+  if(S.cams[t]) $('tilt').value=Math.round(S.cams[t].tilt/DEG);
+  updatePanel(); render();
+}
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+$('play').addEventListener('click',()=>{S.playing=!S.playing; syncPlay();});
+$('speed').addEventListener('change',e=>{S.speed[S.tab]=+e.target.value;});
+$('dir').addEventListener('click',()=>{S.dir*=-1; $('dir').textContent='Temps : '+(S.dir>0?'avant':'arrière');});
+$('today').addEventListener('click',()=>{ if(S.tab==='galaxy'){S.tG=0;$('gt').value=0;} else S.jd=nowJD(); updatePanel(); render(); });
+$('tilt').addEventListener('input',e=>{ S.cams[S.tab].tilt=+e.target.value*DEG; render(); });
+$('scale').addEventListener('change',e=>{S.real=e.target.value==='real'; render();});
+$('areas').addEventListener('change',e=>{S.areas=e.target.checked; if(S.areas && S.tab==='solar' && !S.real){ S.real=true; $('scale').value='real'; } render();});
+$('hz').addEventListener('change',e=>{S.hz=e.target.checked; render();});
+$('halley').addEventListener('change',e=>{S.halley=e.target.checked; if(!S.halley && S.sel.solar==='Halley') S.sel.solar='Terre'; updatePanel(); render();});
+$('exoSel').addEventListener('change',e=>{S.exo=e.target.value; S.sel.exo=null; S.cams.exo.zoom=1; updatePanel(); render();});
+$('prec').addEventListener('change',e=>{S.prec=e.target.checked; render();});
+$('nep').addEventListener('change',e=>{S.nep=e.target.checked; render();});
+function syncHelix(){ $('hwin').value=S.hwin[S.hset]; $('hwinv').textContent=S.hwin[S.hset]+' ans'; const c=10**(-S.hcomp/50); $('hcompv').textContent=c>0.99?'réel':'×1/'+nf0(1/c); }
+$('hset').addEventListener('change',e=>{S.hset=e.target.value; S.cams.helix.zoom=1; syncHelix(); render();});
+$('hwin').addEventListener('input',e=>{S.hwin[S.hset]=+e.target.value; syncHelix(); render();});
+$('hcomp').addEventListener('input',e=>{S.hcomp=+e.target.value; syncHelix(); updatePanel(); render();});
+$('hcomp').value=S.hcomp; syncHelix();
+$('bwin').value=S.bwin; $('bwinv').textContent=S.bwin+' ans';
+$('bwin').addEventListener('input',e=>{S.bwin=+e.target.value; $('bwinv').textContent=S.bwin+' ans'; render();});
+$('gt').value=0; $('gt').addEventListener('input',e=>{S.tG=+e.target.value; updatePanel(); render();});
+document.addEventListener('keydown',e=>{ if(e.code==='Space' && !['INPUT','SELECT','BUTTON'].includes(document.activeElement.tagName)){ e.preventDefault(); S.playing=!S.playing; syncPlay(); }});
+
+/* ---------- pointer: rotate, zoom, pick ---------- */
+const ptrs=new Map(); let moved=false, pinch=0;
+cv.addEventListener('pointerdown',e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); moved=false; if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch=Math.hypot(a.x-b.x,a.y-b.y);} });
+cv.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)) return; const pr=ptrs.get(e.pointerId), dx=e.clientX-pr.x, dy=e.clientY-pr.y; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  const cam=S.cams[S.tab];
+  if(ptrs.size===1){ if(Math.abs(dx)+Math.abs(dy)>1) moved=true; if(['solar','exo','sgra','helix'].includes(S.tab)){ cam.az+=dx*0.008; cam.tilt=Math.max(0,Math.min(88*DEG,cam.tilt+dy*0.006)); $('tilt').value=Math.round(cam.tilt/DEG);} }
+  else if(ptrs.size===2){ const [a,b]=[...ptrs.values()], d=Math.hypot(a.x-b.x,a.y-b.y); if(pinch) cam.zoom=Math.max(0.3,Math.min(60,cam.zoom*d/pinch)); pinch=d; moved=true; }
+  if(!S.playing) render();
+});
+const endPtr=e=>{ if(ptrs.size===1 && !moved){ const r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top; let best=null,bd=22; for(const h of HITS){ const d=Math.hypot(h.x-x,h.y-y); if(d<bd){bd=d;best=h;} } if(best){ if(S.tab==='solar') S.sel.solar=best.n; if(S.tab==='exo') S.sel.exo=best.n; updatePanel(); render(); } } ptrs.delete(e.pointerId); if(ptrs.size<2) pinch=0; };
+cv.addEventListener('pointerup',endPtr); cv.addEventListener('pointercancel',e=>{ptrs.delete(e.pointerId);});
+cv.addEventListener('wheel',e=>{ e.preventDefault(); const cam=S.cams[S.tab]; cam.zoom=Math.max(0.3,Math.min(60,cam.zoom*Math.exp(-e.deltaY*0.0015))); if(!S.playing) render(); },{passive:false});
+
+/* ---------- loop ---------- */
+let last=performance.now(), lastPanel=0;
+function frame(ts){
+  const dt=Math.min(0.1,(ts-last)/1000); last=ts;
+  if(S.playing){
+    if(S.tab==='galaxy'){ S.tG=Math.max(-4600,Math.min(1000,S.tG+S.dir*SPEEDS_GAL[S.speed.galaxy][0]*dt)); if(S.tG<=-4600||S.tG>=1000){S.playing=false;syncPlay();} $('gt').value=Math.round(S.tG); }
+    else S.jd=Math.max(JD_MIN,Math.min(JD_MAX,S.jd+S.dir*SPEEDS_DAY[S.speed[S.tab]][0]*dt));
+    if(ts-lastPanel>250){ updatePanel(); lastPanel=ts; }
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+syncPlay(); setTab('galaxy'); requestAnimationFrame(frame);
+
+/* ================= LAB ================= */
+const tip=document.createElement('div'); tip.className='tip'; tip.hidden=true;
+function attachTips(host){ host.appendChild(tip.cloneNode()); const t=host.lastChild; host.querySelectorAll('[data-tip]').forEach(el=>{ el.addEventListener('pointerenter',()=>{ const r=host.getBoundingClientRect(), b=el.getBoundingClientRect(); t.textContent=el.dataset.tip; t.style.left=(b.left+b.width/2-r.left)+'px'; t.style.top=(b.top-r.top)+'px'; t.hidden=false; }); el.addEventListener('pointerleave',()=>{t.hidden=true;}); }); }
+
+// 1. Kepler fit
+(()=>{
+  const pts=SOLAR.slice(0,8).map(b=>({n:b.n,a:b.a,P:b.P/365.25}));
+  const xs=pts.map(p=>Math.log10(p.a)), ys=pts.map(p=>Math.log10(p.P)), n=xs.length, mx=xs.reduce((a,b)=>a+b)/n, my=ys.reduce((a,b)=>a+b)/n;
+  const slope=xs.reduce((s,x,k)=>s+(x-mx)*(ys[k]-my),0)/xs.reduce((s,x)=>s+(x-mx)**2,0), icpt=my-slope*mx;
+  const Wv=560,Hv=300,L=48,R=16,T=12,B=40, X=v=>L+(Math.log10(v)-Math.log10(0.3))/(Math.log10(50)-Math.log10(0.3))*(Wv-L-R), Y=v=>T+(1-(Math.log10(v)-Math.log10(0.2))/(Math.log10(300)-Math.log10(0.2)))*(Hv-T-B);
+  let s=`<svg viewBox="0 0 ${Wv} ${Hv}" role="img" aria-label="Période en fonction de la distance, échelles logarithmiques">`;
+  for(const v of [0.5,1,2,5,10,20,50]){ s+=`<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${Hv-B}" stroke="${COL.line}" stroke-width="1"/><text x="${X(v)}" y="${Hv-B+16}" fill="${COL.muted}" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">${nf(v)}</text>`; }
+  for(const v of [0.3,1,3,10,30,100,300]){ s+=`<line x1="${L}" x2="${Wv-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${COL.line}" stroke-width="1"/><text x="${L-6}" y="${Y(v)+4}" fill="${COL.muted}" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">${nf(v)}</text>`; }
+  s+=`<text x="${(L+Wv-R)/2}" y="${Hv-6}" fill="${COL.muted}" font-size="11.5" text-anchor="middle">distance moyenne a (UA)</text><text x="12" y="${T+4}" fill="${COL.muted}" font-size="11.5" transform="rotate(-90 12 ${T+4})" text-anchor="end">période P (années)</text>`;
+  s+=`<line x1="${X(0.3)}" y1="${Y(0.3**1.5)}" x2="${X(50)}" y2="${Y(50**1.5)}" stroke="var(--c-vis)" stroke-width="2" stroke-linecap="round"/>`;
+  for(const p of pts){ const up=['Mercure','Vénus','Mars','Saturne','Neptune'].includes(p.n); s+=`<circle cx="${X(p.a)}" cy="${Y(p.P)}" r="5" fill="var(--c-obs)" stroke="${css('--panel')}" stroke-width="2" data-tip="${p.n} · a = ${nf(p.a,3)} UA · P = ${nf(p.P,3)} ans · P²/a³ = ${nf(p.P**2/p.a**3,4)}"/><circle cx="${X(p.a)}" cy="${Y(p.P)}" r="12" fill="transparent" data-tip="${p.n} · a = ${nf(p.a,3)} UA · P = ${nf(p.P,3)} ans · P²/a³ = ${nf(p.P**2/p.a**3,4)}"/><text x="${X(p.a)+(up?-8:8)}" y="${Y(p.P)+(up?-8:14)}" fill="${COL.fg}" font-size="11" text-anchor="${up?'end':'start'}">${p.n}</text>`; }
+  s+='</svg>';
+  const host=document.getElementById('chKepler'); host.innerHTML=s; attachTips(host);
+  document.getElementById('kfit').innerHTML=`Pente de la régression = <b>${nf(slope,4)}</b> (théorie : 1,5) · ordonnée = ${nf(icpt,5)} (théorie : 0) <span class="ok">✓ loi retrouvée</span>`;
+  const au=1.495978707e11, yr=365.25*86400, e=byName('Terre'), GM=4*Math.PI**2*(e.a*au)**3/(e.P*86400)**2;
+  document.getElementById('msun').innerHTML=`Avec a = 1,000 UA = 1,496 × 10¹¹ m et P = ${nf(e.P,3)} jours, on obtient G·M = <b>${sci(GM,4)} m³/s²</b>. En divisant par G = 6,674 × 10⁻¹¹ : <b>M☉ = ${sci(GM/6.674e-11,3)} kg</b>, soit la masse du Soleil, retrouvée à partir d’un calendrier.`;
+  document.getElementById('msgra').innerHTML=`M = <b>${sci(MBH,2)} M☉</b> <span class="ok">✓</span> · valeur publiée : 4,3 × 10⁶ M☉ (GRAVITY 2020). Le péricentre de S2 est à ${nf0(S2.a*(1-S2.e))} UA, soit 4 fois l’orbite de Neptune, à ${nf0(vKms(S2,S2.a*(1-S2.e)))} km/s.`;
+})();
+
+// 2. rotation curve
+(()=>{
+  const obs=[[5,226],[8.178,229],[10,227],[15,219],[20,209],[25,199]], Mvis=6.1e10;
+  const kv=R=>Math.sqrt(G_PC*Mvis/(R*1000)), kb=R=>Math.sqrt(G_PC*MBH/(R*1000)), Menc=(R,v)=>v*v*R*1000/G_PC;
+  const Wv=900,Hv=300,L=48,R_=150,T=14,B=40, X=v=>L+v/26*(Wv-L-R_), Y=v=>T+(1-v/300)*(Hv-T-B);
+  let s=`<svg viewBox="0 0 ${Wv} ${Hv}" role="img" aria-label="Vitesse orbitale en fonction de la distance au centre galactique">`;
+  for(const v of [0,5,10,15,20,25]) s+=`<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${Hv-B}" stroke="${COL.line}"/><text x="${X(v)}" y="${Hv-B+16}" fill="${COL.muted}" font-size="11" text-anchor="middle" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  for(const v of [0,100,200,300]) s+=`<line x1="${L}" x2="${Wv-R_}" y1="${Y(v)}" y2="${Y(v)}" stroke="${COL.line}"/><text x="${L-6}" y="${Y(v)+4}" fill="${COL.muted}" font-size="11" text-anchor="end" font-family="IBM Plex Mono, monospace">${v}</text>`;
+  s+=`<text x="${(L+Wv-R_)/2}" y="${Hv-6}" fill="${COL.muted}" font-size="11.5" text-anchor="middle">distance au centre galactique R (kpc)</text><text x="12" y="${T+4}" fill="${COL.muted}" font-size="11.5" transform="rotate(-90 12 ${T+4})" text-anchor="end">vitesse (km/s)</text>`;
+  const curve=(f,a,b)=>{ let d=''; for(let k=0;k<=120;k++){ const r=a+(b-a)*k/120; d+=(k?'L':'M')+X(r).toFixed(1)+','+Y(Math.min(300,f(r))).toFixed(1); } return d; };
+  s+=`<path d="${curve(kv,4,26)}" fill="none" stroke="var(--c-vis)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  s+=`<path d="${curve(kb,0.4,26)}" fill="none" stroke="var(--c-bh)" stroke-width="2"/>`;
+  s+=`<path d="${obs.map((p,k)=>(k?'L':'M')+X(p[0])+','+Y(p[1])).join('')}" fill="none" stroke="var(--c-obs)" stroke-width="2"/>`;
+  for(const [r,v] of obs){ const t=`R = ${nf(r,1)} kpc · mesuré ${v} km/s · visible seule ${nf0(kv(r))} km/s`; s+=`<circle cx="${X(r)}" cy="${Y(v)}" r="5" fill="var(--c-obs)" stroke="${css('--panel')}" stroke-width="2" data-tip="${t}"/><circle cx="${X(r)}" cy="${Y(v)}" r="13" fill="transparent" data-tip="${t}"/>`; }
+  s+=`<text x="${X(8.178)}" y="${Y(229)-12}" fill="${COL.fg}" font-size="11.5" text-anchor="middle">Soleil</text>`;
+  s+=`<text x="${X(25.4)}" y="${Y(199)+4}" fill="${COL.fg}" font-size="11.5">mesuré</text><text x="${X(26.1)}" y="${Y(kv(26))+4}" fill="${COL.fg}" font-size="11.5">matière visible seule</text><text x="${X(26.1)}" y="${Y(kb(26))-4}" fill="${COL.fg}" font-size="11.5">trou noir seul</text>`;
+  s+='</svg>';
+  const host=document.getElementById('chRot'); host.innerHTML=s; attachTips(host);
+  document.getElementById('rotTxt').innerHTML=`Au-delà de 10 kpc, la vitesse mesurée baisse à peine (227 → 199 km/s) alors que la matière visible prévoit 162 → 102 km/s. Avec M = V²R/G, la masse nécessaire à 25 kpc est de <b>${sci(Menc(25,199),1)} M☉</b>, contre 6 × 10¹⁰ visibles. Environ <b>${nf0((1-Mvis/Menc(25,199))*100)} %</b> de la masse est donc invisible : c’est la <b>matière noire</b>, ou bien une gravité qui se comporte autrement à grande échelle (hypothèse MOND, minoritaire).`;
+  document.getElementById('rotTable').innerHTML=`<thead><tr><th>R (kpc)</th><th>V mesurée</th><th>V si matière visible seule</th><th>Masse intérieure M = V²R/G</th></tr></thead><tbody>${obs.map(([r,v])=>`<tr><td class="num">${nf(r,1)}</td><td class="num">${v} km/s</td><td class="num">${nf0(kv(r))} km/s</td><td class="num">${sci(Menc(r,v),2)} M☉</td></tr>`).join('')}</tbody>`;
+})();
+
+// 3. relativity table + Mars
+(()=>{
+  const GMs=1.32712440018e20, c=C_SI, au=1.495978707e11;
+  const m=byName('Mercure'), precM=6*Math.PI*GMs/(c*c*m.a*au*(1-m.e**2))/DEG*3600*36525/m.P;
+  const rate=(r,GMp,Rp,vs)=>{ const R=r*au; return GMs/(R*c*c)+GMs/R/(2*c*c)+GMp/(Rp*c*c)+vs*vs/(2*c*c); };
+  const mars=(rate(1,3.986e14,6.371e6,465)-rate(1.5237,4.2828e13,3.3895e6,241))*86400*1e6;
+  const gps=((3.986e14/(6.371e6*c*c)-3.986e14/(26.56e6*c*c))-3874**2/(2*c*c))*86400*1e6;
+  const E=byName('Terre'), Ma=byName('Mars'), jd=nowJD(), pe=posAt(E,jd), pm=posAt(Ma,jd), d=Math.hypot(pe[0]-pm[0],pe[1]-pm[1],pe[2]-pm[2]);
+  let dmin=9,dmax=0,jmin=jd; for(let k=0;k<8000;k+=2){ const a=posAt(E,jd+k),b=posAt(Ma,jd+k),dd=Math.hypot(a[0]-b[0],a[1]-b[1],a[2]-b[2]); if(dd<dmin){dmin=dd;jmin=jd+k;} if(dd>dmax) dmax=dd; }
+  const rows=[
+    ['Précession du périhélie de Mercure','Δφ = 6πGM / (c²·a·(1−e²))',nf(precM,2)+'″ par siècle','43″ par siècle, inexpliqués par Newton depuis Le Verrier (1859)'],
+    ['Précession de l’orbite de S2','même formule, M = 4,2 × 10⁶ M☉',nf(S2_PREC/DEG*60,1)+'′ par orbite','≈ 12′, mesuré par GRAVITY (2020)'],
+    ['Horloges des satellites GPS','gravité plus faible − vitesse orbitale','+'+nf(gps,1)+' µs par jour','+38 µs/jour, corrigés à bord (sinon ≈ 11 km d’erreur par jour)'],
+    ['Horloge sur Mars vs sur Terre','potentiel solaire + vitesse + gravité de la planète','+'+nf0(mars)+' µs par jour','≈ 477 µs/jour en moyenne (NIST 2024, orbites exactes)'],
+    ['Retard des images de Mars','distance / vitesse de la lumière',nf(d*LIGHT_S_PER_AU/60,1)+' min aujourd’hui','de 3 à 22 min selon les positions'],
+  ];
+  document.getElementById('relTable').innerHTML=`<thead><tr><th>Phénomène</th><th>Calcul</th><th>Résultat ici</th><th>Mesure / référence</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td class="num">${r[2]}</td><td>${r[3]}</td></tr>`).join('')}</tbody>`;
+  document.getElementById('marsTxt').innerHTML=`<b>Sur ta remarque « relativité, jour, images de Mars » :</b> ce sont trois choses différentes. (1) Une image de Mars reçue aujourd’hui montre Mars telle qu’elle était il y a <b>${nf(d*LIGHT_S_PER_AU/60,1)} minutes</b> (Terre–Mars = ${nf(d,2)} UA). C’est la vitesse finie de la lumière, pas la dilatation du temps. D’ici 20 ans, le retard le plus court sera de ${nf(dmin*LIGHT_S_PER_AU/60,1)} min (le ${fmtDate(jmin)}, Mars à ${nf(dmin,2)} UA) et le plus long de ${nf(dmax*LIGHT_S_PER_AU/60,1)} min. (2) Le « jour » martien (sol) dure 24 h 39 min 35 s parce que Mars tourne plus lentement sur elle-même : c’est de la mécanique, pas de la relativité. (3) La relativité existe bien, mais elle est minuscule : une horloge martienne avance d’environ <b>0,5 milliseconde par jour</b> par rapport à une horloge terrestre. Ça ne se voit pas à l’œil, mais c’est indispensable pour synchroniser de futures communications ou une navigation de type GPS sur Mars.`;
+})();
+
+// 4. future timeline
+(()=>{
+  const items=[
+    ['maintenant','Le Soleil fait le tour de la galaxie',`${VCIRC} km/s (${nf0(VCIRC*3600)} km/h), à ${nf(R0,2)} kpc du centre. Il est ≈ 20 pc au-dessus du disque et monte à ≈ 7 km/s.`,false],
+    ['≈ 1,3 Ma','Passage de l’étoile Gliese 710','Elle passera à ≈ 10 000 UA du Soleil, à travers le nuage d’Oort. Des comètes seront déviées vers l’intérieur du système (pluie de comètes étalée sur des millions d’années).',false],
+    ['≈ 15 Ma','Le Soleil atteint sa hauteur maximale au-dessus du disque','Puis il redescend et traverse le plan galactique ≈ 30 Ma plus tard. C’est un ordre de grandeur, car la période verticale mesurée va de 60 à 90 Ma.',true],
+    [`≈ ${nf0(PGAL)} Ma`,'Un tour complet de la galaxie',`Période = 2πR/V = ${nf0(PGAL)} Ma. Le Soleil en a fait ≈ ${nf(4567/PGAL,0)} depuis sa naissance. Le dernier tour a commencé à l’époque des premiers dinosaures.`,false],
+    ['≈ 1 Ga','La Terre devient trop chaude','Le Soleil gagne ≈ 10 % de luminosité par milliard d’années. L’eau des océans commence à s’échapper vers l’espace.',true],
+    ['≈ 5 Ga (50 % dans 10 Ga)','Rencontre avec Andromède : pas certaine',`Andromède se rapproche à ≈ 110 km/s depuis 2,5 millions d’al. Le calcul naïf distance / vitesse donne ≈ 6,8 Ga, et la gravité accélère la chute. Mais en intégrant les incertitudes de Gaia et Hubble et le Grand Nuage de Magellan, Sawala et al. (2025) obtiennent ≈ 50 % de chances de fusion dans les 10 Ga, et ≈ 2 % dans les 5 Ga. Les étoiles ne se percuteraient presque jamais (elles sont trop espacées).`,true],
+    ['≈ 5 Ga','Le Soleil devient une géante rouge','Il gonfle jusqu’à l’orbite de Vénus, peut-être de la Terre, puis finit en naine blanche. Le Soleil ne deviendra pas un trou noir : il est ≈ 20 fois trop léger.',false],
+    ['en continu','Le Groupe local dérive',`Par rapport au fond cosmologique (CMB), le Soleil file à 370 km/s et le Groupe local à ≈ 620 km/s vers l’Hydre-Centaure, au sein du superamas Laniakea. L’expansion de l’Univers finira par isoler le Groupe local de toutes les autres galaxies.`,false],
+    ['jamais (en pratique)','Tomber dans Sgr A*',`Il faudrait perdre presque toute la vitesse latérale de 229 km/s. Aucun mécanisme connu ne le fait : l’orbite solaire est quasi circulaire (excentricité ≈ 0,06–0,1) et reste à 7–9 kpc du centre.`,false],
+  ];
+  document.getElementById('timeline').innerHTML=items.map(([w,t,p,u])=>`<div class="tl${u?' unc':''}"><div class="when">${w}</div><div class="what"><b>${t}</b><p>${p}</p></div></div>`).join('')+`<p class="note" style="margin:10px 0 0 18px">Point plein : valeur bien établie. Cercle vide : ordre de grandeur, ou résultat qui dépend fortement du modèle.</p>`;
+})();
+})();
+</script>
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.0/dist/mermaid.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+
+</body></html>
