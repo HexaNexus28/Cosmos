@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="docs/images/logo-animated.svg" width="120" alt="Logo Cosmos">
-</p>
-
 <h1 align="center">Cosmos</h1>
 
 <p align="center">
